@@ -1,0 +1,11 @@
+patient_id,loinc_code,indicator_name,value,unit,measured_at
+P001,2160-0,血清肌酸酐 (Serum Creatinine),1.2,mg/dL,2024-08-15
+P001,98979-8,eGFR (CKD-EPI 2021),68,mL/min/1.73m²,2024-08-15
+P001,2965-2,尿蛋白 / 肌酸酐比 (UACR),35,mg/g,2024-08-15
+P002,4548-4,HbA1c (糖化血色素),6.8,%,2024-08-20
+P002,2339-0,空腹血糖 (Fasting Glucose),135,mg/dL,2024-08-20
+P003,2160-0,血清肌酸酐 (Serum Creatinine),2.1,mg/dL,2024-08-22
+P003,98979-8,eGFR (CKD-EPI 2021),32,mL/min/1.73m²,2024-08-22
+P004,8480-6,收縮壓 (Systolic BP),128,mmHg,2024-08-25
+P004,8462-4,舒張壓 (Diastolic BP),82,mmHg,2024-08-25
+P005,2093-3,總膽固醇 (Total Cholesterol),215,mg/dL,2024-08-28

@@ -1,0 +1,398 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+<BaseLayout title="clinconvert — XLS / CSV / JSON → FHIR R4">
+  <section class="hero container">
+    <h1>把病歷資料轉成 <span class="hl">FHIR R4</span> 標準</h1>
+    <p class="lead">
+      支援 XLS / XLSX / CSV / JSON 輸入，輸出符合 HL7 FHIR R4 規範的 Bundle JSON、NDJSON、Transaction Bundle。
+      適合中小型診所從 Excel 過渡到 FHIR 互通，或開發者測試 FHIR pipeline。
+    </p>
+    <p class="privacy">
+      🔒 <strong>檔案完全在你的瀏覽器處理</strong>。不送到任何伺服器、不上傳、不留紀錄。
+    </p>
+  </section>
+
+  <section class="container converter-section">
+    <div class="converter" id="converter">
+      <!-- Step 1: Upload -->
+      <div class="card">
+        <div class="step-label">Step 1 · 上傳檔案</div>
+        <label for="file-input" class="dropzone" id="dropzone">
+          <input type="file" id="file-input" accept=".xlsx,.xls,.csv,.json" hidden />
+          <div class="dropzone-content">
+            <strong>選擇檔案</strong>，或拖拉檔案到這裡
+            <p class="muted">支援 .xlsx · .xls · .csv · .json</p>
+          </div>
+        </label>
+        <div id="file-info" class="file-info" hidden></div>
+        <div class="samples muted">
+          沒有手邊資料？試試範例：
+          <a href="/sample-data/sample-patients.csv" download>sample-patients.csv</a> ·
+          <a href="/sample-data/sample-kdigo-observations.csv" download>sample-kdigo-observations.csv</a> ·
+          <a href="/sample-data/sample-exclincalc.json" download>sample-exclincalc.json</a>
+        </div>
+      </div>
+
+      <!-- Step 2: Datasets + Template -->
+      <div class="card" id="step-mapping" hidden>
+        <div class="step-label">Step 2 · 選擇映射範本</div>
+        <div id="datasets-list"></div>
+      </div>
+
+      <!-- Step 3: Output -->
+      <div class="card" id="step-output" hidden>
+        <div class="step-label">Step 3 · 產出 FHIR Bundle</div>
+        <div class="output-summary" id="output-summary"></div>
+        <div class="output-actions">
+          <button type="button" data-format="collection">下載 FHIR Bundle (collection)</button>
+          <button type="button" data-format="transaction">下載 Transaction Bundle</button>
+          <button type="button" data-format="ndjson">下載 NDJSON</button>
+        </div>
+        <details class="preview">
+          <summary>預覽 JSON</summary>
+          <pre id="output-preview"></pre>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section id="how" class="container">
+    <h2>How it works</h2>
+    <ol class="steps">
+      <li>
+        <strong>上傳檔案</strong>
+        <p>XLS / XLSX / CSV / JSON。每個 sheet / array 會被視為一個 dataset。</p>
+      </li>
+      <li>
+        <strong>選擇映射範本（或自訂）</strong>
+        <p>本工具預設四個範本：ExClinCalc Patient / Encounter、健保處方箋、KDIGO 體檢。也可手動指定每個欄位對應到哪個 FHIR field。</p>
+      </li>
+      <li>
+        <strong>產出 FHIR Bundle</strong>
+        <p>下載成 Bundle JSON（collection）、Transaction Bundle（可 POST 到 FHIR server）、或 NDJSON（批次匯入）。</p>
+      </li>
+    </ol>
+  </section>
+
+  <section id="templates" class="container">
+    <h2>支援的 FHIR Resource (v1)</h2>
+    <ul class="resources">
+      <li>
+        <code>Patient</code> — 身分、姓名、性別、生日、聯絡方式
+        <span class="muted">·  <a href="https://hl7.org/fhir/R4/patient.html" target="_blank" rel="noopener">HL7 spec</a></span>
+      </li>
+      <li>
+        <code>Encounter</code> — 就診紀錄、狀態、時間段
+        <span class="muted">·  <a href="https://hl7.org/fhir/R4/encounter.html" target="_blank" rel="noopener">HL7 spec</a></span>
+      </li>
+      <li>
+        <code>Observation</code> — 檢驗值、生命徵象（含 LOINC 編碼）
+        <span class="muted">·  <a href="https://hl7.org/fhir/R4/observation.html" target="_blank" rel="noopener">HL7 spec</a></span>
+      </li>
+    </ul>
+
+    <h3>規劃中（v2）</h3>
+    <ul class="resources muted">
+      <li><code>Medication</code> / <code>Condition</code> / <code>Procedure</code></li>
+      <li>HL7 v2 message → FHIR R4</li>
+      <li>反向轉換：FHIR → XLS（給診所人員看的格式）</li>
+      <li>對接 HAPI FHIR public test server 做 round-trip 驗證</li>
+    </ul>
+  </section>
+
+  <section class="container context-section">
+    <div class="context">
+      <h2>關於這個工具</h2>
+      <p>
+        衛福部 2026 年目標完成全台<strong>醫學中心 FHIR 電子病歷互通</strong>（已有中山、長庚、馬偕三家示範醫院）。
+        到 2028 年將擴及衛生所與診所。
+      </p>
+      <p>
+        <strong>clinconvert 是給「中小型診所、護理之家、研究者」過渡到 FHIR 用的轉換工具</strong>。
+        大醫院的 HIS DB → FHIR 通常用 MIRTH Connect 或 HAPI FHIR 等 ETL 框架，這套工具填補的是「資料還在 Excel 階段」的場景。
+      </p>
+      <p>設計選擇：</p>
+      <ul>
+        <li><strong>瀏覽器本地處理</strong> ── 醫療資料不離開使用者裝置，符合個資法精神</li>
+        <li><strong>Adapter pattern</strong> ── 容易擴充支援新的輸入 / 輸出格式</li>
+        <li><strong>開源</strong> ── 完整程式碼在 GitHub，歡迎 fork 客製成自家工具</li>
+      </ul>
+    </div>
+  </section>
+
+  <style>
+    .hero { padding: 4rem 20px 2rem; max-width: 760px; }
+    .hero h1 { margin-bottom: 1rem; }
+    .hl { color: var(--c-primary); }
+    .lead { font-size: 1.15rem; margin-bottom: 1rem; color: var(--c-text); }
+    .privacy { font-size: 0.95rem; padding: 0.85rem 1rem; background: #ecfdf5; border-left: 3px solid var(--c-success); border-radius: 0 6px 6px 0; color: var(--c-success); }
+    section { padding: 2rem 20px; }
+
+    .converter-section { padding-top: 1rem; }
+    .converter { display: grid; gap: 1.25rem; }
+    .card { padding: 1.5rem; background: var(--c-bg-soft); border-radius: 12px; border: 1px solid var(--c-border); }
+    .step-label { font-size: 0.78rem; font-weight: 700; color: var(--c-primary); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.85rem; }
+
+    .dropzone { display: block; padding: 2.5rem 1rem; border: 2px dashed var(--c-border); border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.15s; background: white; }
+    .dropzone:hover, .dropzone.drag-over { border-color: var(--c-primary); background: #f0fdfa; }
+    .dropzone strong { color: var(--c-primary); }
+    .dropzone p { margin-top: 0.5rem; margin-bottom: 0; font-size: 0.9rem; }
+
+    .file-info { margin-top: 1rem; padding: 0.85rem 1rem; background: white; border-radius: 6px; border: 1px solid var(--c-border); font-size: 0.9rem; }
+    .file-info strong { color: var(--c-text); }
+    .samples { margin-top: 0.85rem; font-size: 0.85rem; }
+    .samples a { color: var(--c-primary); }
+
+    .dataset { padding: 1rem; background: white; border: 1px solid var(--c-border); border-radius: 8px; margin-bottom: 0.85rem; }
+    .dataset-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem; }
+    .dataset-name { font-weight: 600; }
+    .dataset-meta { color: var(--c-text-soft); font-size: 0.85rem; }
+    .dataset select { padding: 0.4rem 0.6rem; border: 1px solid var(--c-border); border-radius: 6px; font-family: inherit; font-size: 0.9rem; }
+    .dataset-preview { font-family: var(--font-mono); font-size: 0.75rem; color: var(--c-text-muted); margin-top: 0.5rem; }
+
+    .output-summary { margin-bottom: 1rem; padding: 0.85rem 1rem; background: white; border-radius: 6px; border: 1px solid var(--c-border); font-size: 0.95rem; }
+    .output-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .output-actions button { padding: 0.65rem 1rem; background: var(--c-primary); color: white; border: none; border-radius: 6px; font-family: inherit; font-size: 0.92rem; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+    .output-actions button:hover { background: var(--c-primary-light); }
+    .preview { margin-top: 1rem; }
+    .preview summary { cursor: pointer; font-size: 0.9rem; color: var(--c-text-muted); margin-bottom: 0.5rem; }
+    .preview pre { max-height: 320px; overflow: auto; font-size: 0.78rem; line-height: 1.5; }
+
+    .steps { list-style: none; counter-reset: step; display: grid; gap: 1.25rem; margin-top: 1rem; }
+    .steps li { padding-left: 3rem; position: relative; }
+    .steps li::before {
+      counter-increment: step;
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 2rem;
+      height: 2rem;
+      background: var(--c-primary);
+      color: white;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+    }
+    .resources { list-style: none; display: grid; gap: 0.5rem; margin-top: 1rem; }
+    .resources li { padding: 0.6rem 0.85rem; background: var(--c-bg-soft); border-radius: 6px; border: 1px solid var(--c-border); }
+    .context { background: var(--c-bg-soft); border-radius: 12px; padding: 2rem; }
+    .context ul { padding-left: 1.25em; }
+    .context li { color: var(--c-text-muted); margin-bottom: 0.4em; }
+
+    .error { color: var(--c-error); padding: 0.6rem 0.85rem; background: #fef2f2; border-radius: 6px; border: 1px solid #fecaca; margin-top: 0.5rem; font-size: 0.9rem; }
+  </style>
+
+  <script>
+    import { parseXlsx } from '../lib/adapters/xlsx';
+    import { parseJson } from '../lib/adapters/json';
+    import { ALL_TEMPLATES, suggestTemplate, type MappingTemplate } from '../lib/mapping/templates';
+    import { buildResource } from '../lib/fhir/builders';
+    import {
+      toCollectionBundle,
+      toTransactionBundle,
+      toNdjson,
+      toPrettyJson,
+      triggerDownload,
+    } from '../lib/output/bundle';
+    import type { NormalizedDataset } from '../lib/core/internal-model';
+    import type { FhirAnyResource } from '../lib/fhir/types';
+
+    // === State ===
+    interface DatasetState {
+      dataset: NormalizedDataset;
+      templateId: string | 'skip';
+    }
+    let datasetStates: DatasetState[] = [];
+
+    // === DOM refs ===
+    const $file = document.getElementById('file-input') as HTMLInputElement;
+    const $dropzone = document.getElementById('dropzone') as HTMLLabelElement;
+    const $fileInfo = document.getElementById('file-info') as HTMLDivElement;
+    const $stepMapping = document.getElementById('step-mapping') as HTMLDivElement;
+    const $datasetsList = document.getElementById('datasets-list') as HTMLDivElement;
+    const $stepOutput = document.getElementById('step-output') as HTMLDivElement;
+    const $outputSummary = document.getElementById('output-summary') as HTMLDivElement;
+    const $outputPreview = document.getElementById('output-preview') as HTMLPreElement;
+
+    // === Drag & drop ===
+    $dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      $dropzone.classList.add('drag-over');
+    });
+    $dropzone.addEventListener('dragleave', () => $dropzone.classList.remove('drag-over'));
+    $dropzone.addEventListener('drop', (e: DragEvent) => {
+      e.preventDefault();
+      $dropzone.classList.remove('drag-over');
+      const file = e.dataTransfer?.files[0];
+      if (file) handleFile(file);
+    });
+
+    $file.addEventListener('change', () => {
+      const file = $file.files?.[0];
+      if (file) handleFile(file);
+    });
+
+    async function handleFile(file: File) {
+      $fileInfo.hidden = false;
+      $fileInfo.innerHTML = `<strong>${file.name}</strong> · ${(file.size / 1024).toFixed(1)} KB · 解析中...`;
+
+      try {
+        let datasets: NormalizedDataset[];
+        const ext = file.name.toLowerCase().split('.').pop();
+        if (ext === 'json') {
+          const text = await file.text();
+          datasets = await parseJson(text, { sourceName: file.name });
+        } else {
+          datasets = await parseXlsx(file);
+        }
+
+        if (datasets.length === 0) {
+          $fileInfo.innerHTML = `<span class="error">無法解析資料（無有效列）</span>`;
+          return;
+        }
+
+        $fileInfo.innerHTML = `<strong>${file.name}</strong> · 找到 ${datasets.length} 個 dataset、共 ${datasets.reduce((s, d) => s + d.records.length, 0)} 筆`;
+        showMapping(datasets);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        $fileInfo.innerHTML = `<span class="error">解析失敗：${msg}</span>`;
+      }
+    }
+
+    function showMapping(datasets: NormalizedDataset[]) {
+      datasetStates = datasets.map((ds) => {
+        const suggested = suggestTemplate(ds.sourceDescription);
+        return {
+          dataset: ds,
+          templateId: suggested?.id ?? 'skip',
+        };
+      });
+
+      $datasetsList.innerHTML = datasetStates
+        .map((s, i) => renderDataset(s, i))
+        .join('');
+
+      // Bind change events
+      $datasetsList.querySelectorAll<HTMLSelectElement>('select[data-idx]').forEach((sel) => {
+        sel.addEventListener('change', (e) => {
+          const idx = parseInt(sel.dataset.idx ?? '0', 10);
+          datasetStates[idx].templateId = (e.target as HTMLSelectElement).value;
+          updateOutput();
+        });
+      });
+
+      $stepMapping.hidden = false;
+      updateOutput();
+    }
+
+    function renderDataset(state: DatasetState, idx: number): string {
+      const { dataset, templateId } = state;
+      const sample = dataset.records[0]?.fields ?? {};
+      const sampleStr = Object.entries(sample)
+        .slice(0, 4)
+        .map(([k, v]) => `${k}: ${String(v ?? '').slice(0, 30)}`)
+        .join(' · ');
+
+      const options = [
+        `<option value="skip" ${templateId === 'skip' ? 'selected' : ''}>— 不轉換（跳過）—</option>`,
+        ...ALL_TEMPLATES.map(
+          (t) =>
+            `<option value="${t.id}" ${templateId === t.id ? 'selected' : ''}>${t.resourceType} · ${t.name}</option>`
+        ),
+      ].join('');
+
+      return `
+        <div class="dataset">
+          <div class="dataset-header">
+            <span class="dataset-name">${escapeHtml(dataset.sourceDescription)}</span>
+            <span class="dataset-meta">${dataset.records.length} 筆 · ${dataset.columns.length} 欄</span>
+          </div>
+          <label>
+            <span class="muted">套用範本：</span>
+            <select data-idx="${idx}">${options}</select>
+          </label>
+          <div class="dataset-preview">第一筆預覽：${escapeHtml(sampleStr || '(空)')}</div>
+        </div>
+      `;
+    }
+
+    function escapeHtml(s: string): string {
+      return s
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function getTemplate(id: string): MappingTemplate | undefined {
+      return ALL_TEMPLATES.find((t) => t.id === id);
+    }
+
+    function generateResources(): FhirAnyResource[] {
+      const resources: FhirAnyResource[] = [];
+      for (const s of datasetStates) {
+        if (s.templateId === 'skip') continue;
+        const tpl = getTemplate(s.templateId);
+        if (!tpl) continue;
+        for (const record of s.dataset.records) {
+          try {
+            resources.push(buildResource(record, tpl));
+          } catch (err) {
+            console.error('build error', record.sourceRef, err);
+          }
+        }
+      }
+      return resources;
+    }
+
+    function updateOutput() {
+      const resources = generateResources();
+      if (resources.length === 0) {
+        $stepOutput.hidden = true;
+        return;
+      }
+      $stepOutput.hidden = false;
+      const byType = resources.reduce<Record<string, number>>((acc, r) => {
+        acc[r.resourceType] = (acc[r.resourceType] ?? 0) + 1;
+        return acc;
+      }, {});
+      $outputSummary.innerHTML = `共 <strong>${resources.length}</strong> 個 resource：${Object.entries(byType)
+        .map(([k, v]) => `${k} × ${v}`)
+        .join(' · ')}`;
+      const bundle = toCollectionBundle(resources);
+      $outputPreview.textContent = toPrettyJson(bundle).slice(0, 4000) + (resources.length > 5 ? '\n... (truncated for preview)' : '');
+    }
+
+    // Download handlers
+    document.querySelectorAll<HTMLButtonElement>('.output-actions button').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const resources = generateResources();
+        if (resources.length === 0) return;
+        const fmt = btn.dataset.format ?? 'collection';
+        const ts = new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-');
+        if (fmt === 'collection') {
+          triggerDownload(
+            toPrettyJson(toCollectionBundle(resources)),
+            `fhir-bundle-${ts}.json`,
+            'application/fhir+json'
+          );
+        } else if (fmt === 'transaction') {
+          triggerDownload(
+            toPrettyJson(toTransactionBundle(resources)),
+            `fhir-transaction-${ts}.json`,
+            'application/fhir+json'
+          );
+        } else if (fmt === 'ndjson') {
+          triggerDownload(
+            toNdjson(resources),
+            `fhir-${ts}.ndjson`,
+            'application/x-ndjson'
+          );
+        }
+      });
+    });
+  </script>
+</BaseLayout>

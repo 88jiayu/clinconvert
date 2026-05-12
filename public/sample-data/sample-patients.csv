@@ -1,0 +1,6 @@
+id,last_name,first_name,gender,birth_date,phone,email,city
+P001,王,小明,男,1985-03-12,0912345678,wang@example.com,台北市
+P002,李,小華,女,1992-07-25,0923456789,lee@example.com,新北市
+P003,張,大同,男,1978-11-03,0934567890,chang@example.com,桃園市
+P004,陳,美麗,女,2001-04-18,0945678901,chen@example.com,台中市
+P005,林,志強,男,民國70-08-30,0956789012,lin@example.com,高雄市

@@ -1,0 +1,114 @@
+---
+export interface Props {
+  title: string;
+  description?: string;
+}
+const {
+  title,
+  description = 'clinconvert ── 把 XLS / CSV / JSON 病歷資料轉成 FHIR R4 標準格式。瀏覽器本地處理、檔案不離本地。',
+} = Astro.props;
+---
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container">
+        <a href="/" class="brand">
+          <span class="brand-mark">⇄</span>
+          <span class="brand-name">clinconvert</span>
+        </a>
+        <nav class="nav-links">
+          <a href="/#how">How it works</a>
+          <a href="/#templates">Templates</a>
+          <a href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <slot />
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <p>
+          <strong>clinconvert</strong> · XLS / CSV / JSON → FHIR R4 轉換工具 ·
+          <a href="https://jiayuselfweb.pages.dev/" target="_blank" rel="noopener">江家寓的作品</a>
+        </p>
+        <p class="muted">
+          資料完全在你的瀏覽器處理，不送到任何伺服器。Built with Astro on Cloudflare Pages.
+        </p>
+      </div>
+    </footer>
+
+    <style is:global>
+      :root {
+        --c-primary: #0f766e;
+        --c-primary-light: #14b8a6;
+        --c-accent: #f97316;
+        --c-bg: #ffffff;
+        --c-bg-soft: #f8fafc;
+        --c-text: #0f172a;
+        --c-text-muted: #475569;
+        --c-text-soft: #94a3b8;
+        --c-border: #e2e8f0;
+        --c-success: #15803d;
+        --c-warn: #b45309;
+        --c-error: #b91c1c;
+        --max-w: 1080px;
+        --font-sans: "Inter", "PingFang TC", "Microsoft JhengHei", sans-serif;
+        --font-mono: "JetBrains Mono", monospace;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html { scroll-behavior: smooth; }
+      body {
+        font-family: var(--font-sans);
+        font-size: 16px;
+        line-height: 1.65;
+        color: var(--c-text);
+        background: var(--c-bg);
+        word-break: keep-all;
+        overflow-wrap: break-word;
+      }
+      a { color: var(--c-primary); text-decoration: none; }
+      a:hover { color: var(--c-primary-light); }
+      h1, h2, h3 { font-weight: 700; line-height: 1.3; }
+      h1 { font-size: 2.5rem; letter-spacing: -0.02em; }
+      h2 { font-size: 1.75rem; margin: 2rem 0 0.75rem; }
+      h3 { font-size: 1.2rem; margin: 1.25rem 0 0.5rem; }
+      p { color: var(--c-text-muted); margin-bottom: 1em; }
+      code { font-family: var(--font-mono); background: var(--c-bg-soft); padding: 1px 6px; border-radius: 4px; font-size: 0.9em; }
+      pre { background: var(--c-bg-soft); padding: 1rem; border-radius: 8px; overflow-x: auto; border: 1px solid var(--c-border); margin: 1em 0; font-size: 0.85em; }
+      .container { max-width: var(--max-w); margin: 0 auto; padding: 0 20px; }
+      .muted { color: var(--c-text-soft); font-size: 0.9em; }
+
+      .site-header { border-bottom: 1px solid var(--c-border); background: var(--c-bg); position: sticky; top: 0; z-index: 50; backdrop-filter: blur(8px); }
+      .site-header .container { display: flex; justify-content: space-between; align-items: center; padding-top: 0.85rem; padding-bottom: 0.85rem; }
+      .brand { display: inline-flex; align-items: center; gap: 0.5rem; color: var(--c-text); font-weight: 700; }
+      .brand-mark { color: var(--c-primary); font-size: 1.3rem; }
+      .brand-name { letter-spacing: -0.01em; }
+      .nav-links { display: flex; gap: 1.25rem; }
+      .nav-links a { color: var(--c-text-muted); font-size: 0.92rem; }
+      .nav-links a:hover { color: var(--c-primary); }
+
+      .site-footer { border-top: 1px solid var(--c-border); margin-top: 5rem; padding: 2rem 0; background: var(--c-bg-soft); }
+      .site-footer p { margin-bottom: 0.3rem; font-size: 0.9rem; }
+
+      @media (max-width: 640px) {
+        h1 { font-size: 1.8rem; }
+        h2 { font-size: 1.4rem; }
+      }
+    </style>
+  </body>
+</html>

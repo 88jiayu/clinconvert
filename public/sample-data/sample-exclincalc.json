@@ -1,0 +1,40 @@
+{
+  "patients": [
+    {
+      "id": "P001",
+      "last_name": "王",
+      "first_name": "小明",
+      "gender": "男",
+      "birth_date": "1985-03-12",
+      "phone": "0912345678",
+      "email": "wang@example.com",
+      "city": "台北市"
+    },
+    {
+      "id": "P002",
+      "last_name": "李",
+      "first_name": "小華",
+      "gender": "女",
+      "birth_date": "1992-07-25",
+      "phone": "0923456789",
+      "email": "lee@example.com",
+      "city": "新北市"
+    }
+  ],
+  "encounters": [
+    {
+      "id": "E001",
+      "status": "finished",
+      "patient_id": "P001",
+      "started_at": "2024-08-15 09:30",
+      "finished_at": "2024-08-15 09:45"
+    },
+    {
+      "id": "E002",
+      "status": "in-progress",
+      "patient_id": "P002",
+      "started_at": "2024-08-20 14:15",
+      "finished_at": ""
+    }
+  ]
+}
