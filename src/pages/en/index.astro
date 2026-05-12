@@ -1,36 +1,35 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
 ---
-<BaseLayout title="clinconvert — XLS / CSV / JSON → FHIR R4">
+<BaseLayout title="clinconvert — XLS / CSV / JSON → FHIR R4" lang="en">
   <section class="hero container">
-    <h1>把病歷資料轉成 <span class="hl">FHIR R4</span> 標準</h1>
+    <h1>Convert clinical data to <span class="hl">FHIR R4</span></h1>
     <p class="lead">
-      支援 XLS / XLSX / CSV / JSON 輸入。批次上傳幾百個檔，瀏覽器內 Web Worker 並行處理，
-      輸出符合 HL7 FHIR R4 規範的 Bundle JSON、NDJSON、Transaction Bundle。
+      Upload XLS / XLSX / CSV / JSON ── even hundreds of files at once. In-browser Web Worker pool
+      processes them in parallel and emits HL7 FHIR R4 Bundle JSON, NDJSON, or Transaction Bundles.
     </p>
     <p class="privacy">
-      🔒 <strong>檔案 100% 在你的瀏覽器處理</strong> · 不上傳、不留紀錄 · 並行 Worker Pool
+      🔒 <strong>100% browser-local processing</strong> · No upload · No tracking · Worker Pool parallelism
     </p>
   </section>
 
   <section class="container converter-section">
     <div class="converter">
 
-      <!-- Step 1: Upload -->
       <div class="card">
-        <div class="step-label">Step 1 · 上傳檔案</div>
+        <div class="step-label">Step 1 · Upload files</div>
         <label for="file-input" class="dropzone" id="dropzone">
           <input type="file" id="file-input" accept=".xlsx,.xls,.csv,.json" multiple hidden />
           <div class="dropzone-content">
-            <strong>選擇檔案</strong>，或拖拉檔案 / 資料夾到這裡
-            <p class="muted">支援 .xlsx · .xls · .csv · .json · 一次幾百個檔沒問題</p>
+            <strong>Choose files</strong>, or drop files / folders here
+            <p class="muted">Supports .xlsx · .xls · .csv · .json · Hundreds at a time</p>
           </div>
         </label>
         <div class="upload-options">
-          <button type="button" class="link-btn" id="pick-folder">📁 改選資料夾</button>
+          <button type="button" class="link-btn" id="pick-folder">📁 Pick a folder</button>
           <input type="file" id="folder-input" webkitdirectory directory multiple hidden />
           <span class="muted samples">
-            ｜範例：
+            ｜Samples:
             <a href="/sample-data/sample-patients.csv" download>patients.csv</a> ·
             <a href="/sample-data/sample-kdigo-observations.csv" download>observations.csv</a> ·
             <a href="/sample-data/sample-exclincalc.json" download>exclincalc.json</a>
@@ -39,35 +38,32 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         <div id="file-info" class="file-info" hidden></div>
       </div>
 
-      <!-- Step 2: Processing / Progress -->
       <div class="card" id="step-progress" hidden>
-        <div class="step-label">Step 2 · 處理進度</div>
+        <div class="step-label">Step 2 · Processing</div>
         <div class="progress-row">
           <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
-          <span id="progress-text" class="progress-text">準備中...</span>
+          <span id="progress-text" class="progress-text">Preparing...</span>
         </div>
         <div class="progress-stats" id="progress-stats"></div>
-        <button type="button" class="cancel-btn" id="cancel-btn" hidden>取消所有處理</button>
+        <button type="button" class="cancel-btn" id="cancel-btn" hidden>Cancel all jobs</button>
       </div>
 
-      <!-- Step 3: Per-file results / mapping preview -->
       <div class="card" id="step-results" hidden>
-        <div class="step-label">Step 3 · 各檔結果 + 預覽</div>
+        <div class="step-label">Step 3 · Per-file results + preview</div>
         <div id="results-list"></div>
       </div>
 
-      <!-- Step 4: Output -->
       <div class="card" id="step-output" hidden>
-        <div class="step-label">Step 4 · 下載 FHIR Bundle</div>
+        <div class="step-label">Step 4 · Download FHIR Bundles</div>
         <div class="output-summary" id="output-summary"></div>
         <div class="output-actions">
           <button type="button" data-format="collection">⬇ Bundle (collection)</button>
           <button type="button" data-format="transaction">⬇ Transaction Bundle</button>
           <button type="button" data-format="ndjson">⬇ NDJSON</button>
-          <button type="button" data-format="zip-per-file" class="secondary">⬇ 每檔分開（zip）</button>
+          <button type="button" data-format="zip-per-file" class="secondary">⬇ Per-file zip</button>
         </div>
         <details class="preview">
-          <summary>預覽 JSON（前 5000 字）</summary>
+          <summary>Preview JSON (first 5,000 chars)</summary>
           <pre id="output-preview"></pre>
         </details>
       </div>
@@ -76,59 +72,59 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   </section>
 
   <section id="how" class="container">
-    <h2>使用方式</h2>
+    <h2>How it works</h2>
     <ol class="steps">
       <li>
-        <strong>上傳檔案 / 資料夾</strong>
-        <p>XLS / XLSX / CSV / JSON。可一次拖拉幾百個檔，或直接拖整個資料夾。每個 sheet / array 視為一個 dataset。</p>
+        <strong>Upload files or a folder</strong>
+        <p>XLS / XLSX / CSV / JSON. Drag dozens or hundreds at once, or drop a whole folder. Each sheet / array becomes a dataset.</p>
       </li>
       <li>
-        <strong>自動套用範本</strong>
-        <p>依檔名與 sheet 名稱自動推薦對應 FHIR resource 範本（ExClinCalc / 健保處方箋 / KDIGO 體檢 四種）。Web Worker Pool 並行處理。</p>
+        <strong>Auto template matching</strong>
+        <p>Filename and sheet name are matched against four built-in templates (ExClinCalc, NHI prescription, KDIGO labs). Web Worker pool runs in parallel.</p>
       </li>
       <li>
-        <strong>下載 FHIR Bundle</strong>
-        <p>所有 resource 合併成單一 Bundle；或每檔分開、各自獨立的 Bundle 打包成 zip。</p>
+        <strong>Download FHIR Bundle</strong>
+        <p>All resources merged into one Bundle, or each input file's Bundle bundled into a single zip.</p>
       </li>
     </ol>
   </section>
 
   <section id="templates" class="container">
-    <h2>支援的 FHIR Resource（v1）</h2>
+    <h2>Supported FHIR Resources (v1)</h2>
     <ul class="resources">
-      <li><code>Patient</code> · 身分、姓名、性別、生日、聯絡方式 <span class="muted">· <a href="https://hl7.org/fhir/R4/patient.html" target="_blank" rel="noopener">HL7 spec</a></span></li>
-      <li><code>Encounter</code> · 就診紀錄、狀態、時間段 <span class="muted">· <a href="https://hl7.org/fhir/R4/encounter.html" target="_blank" rel="noopener">HL7 spec</a></span></li>
-      <li><code>Observation</code> · 檢驗值、生命徵象（LOINC 編碼） <span class="muted">· <a href="https://hl7.org/fhir/R4/observation.html" target="_blank" rel="noopener">HL7 spec</a></span></li>
+      <li><code>Patient</code> · identity, name, gender, birthDate, telecom <span class="muted">· <a href="https://hl7.org/fhir/R4/patient.html" target="_blank" rel="noopener">HL7 spec</a></span></li>
+      <li><code>Encounter</code> · visit record, status, period <span class="muted">· <a href="https://hl7.org/fhir/R4/encounter.html" target="_blank" rel="noopener">HL7 spec</a></span></li>
+      <li><code>Observation</code> · lab values, vital signs (LOINC-coded) <span class="muted">· <a href="https://hl7.org/fhir/R4/observation.html" target="_blank" rel="noopener">HL7 spec</a></span></li>
     </ul>
 
-    <h3>規劃中（v2 / v3）</h3>
+    <h3>Planned (v2 / v3)</h3>
     <ul class="resources muted">
       <li><code>Medication</code> / <code>Condition</code> / <code>Procedure</code></li>
       <li>HL7 v2 message → FHIR R4</li>
-      <li>反向轉換：FHIR → XLS</li>
-      <li>對接 HAPI FHIR public test server 做 round-trip 驗證</li>
-      <li>CLI 版本（給診所 IT 跑 batch script）</li>
+      <li>Reverse: FHIR → XLS</li>
+      <li>HAPI FHIR public test server integration for round-trip validation</li>
+      <li>CLI version (for clinic IT batch scripting)</li>
     </ul>
   </section>
 
   <section class="container context-section">
     <div class="context">
-      <h2>關於這個工具</h2>
+      <h2>About this tool</h2>
       <p>
-        衛福部 2026 年目標完成全台<strong>醫學中心 FHIR 電子病歷互通</strong>（中山、長庚、馬偕已示範完成）。
-        到 2028 年將擴及衛生所與診所。
+        Taiwan's Ministry of Health and Welfare targets <strong>FHIR-based EMR interoperability across all medical centers by end of 2026</strong>
+        (Chung Shan, Chang Gung, MacKay already piloted). By 2028 the program extends to community clinics and public health centers.
       </p>
       <p>
-        <strong>clinconvert 是給「中小型診所、護理之家、研究者」過渡到 FHIR 用的轉換工具</strong>。
-        大醫院的 HIS DB → FHIR 用 MIRTH Connect 或 HAPI FHIR；本工具補位「資料還在 Excel 階段」的小規模場景，
-        但**架構支援批次處理幾百個檔**（Web Worker Pool 並行）。
+        <strong>clinconvert fills the gap for small clinics, long-term care facilities, and researchers</strong> whose data still lives in Excel.
+        Large hospital HIS → FHIR pipelines run on MIRTH Connect or HAPI FHIR; this tool covers the "Excel era" — and the
+        architecture handles hundreds of files at a time via Web Worker parallelism.
       </p>
-      <p>設計選擇：</p>
+      <p>Design choices:</p>
       <ul>
-        <li><strong>瀏覽器本地處理</strong> ── 醫療資料不離開使用者裝置</li>
-        <li><strong>Web Worker Pool 並行</strong> ── 主執行緒不卡、可處理大批檔案</li>
-        <li><strong>Adapter pattern</strong> ── 容易擴充新的輸入 / 輸出格式</li>
-        <li><strong>開源</strong> ── 完整程式碼在 GitHub，歡迎 fork 客製</li>
+        <li><strong>Browser-local processing</strong> ── patient data never leaves your device</li>
+        <li><strong>Web Worker Pool parallelism</strong> ── main thread stays responsive; large batches feasible</li>
+        <li><strong>Adapter pattern</strong> ── easy to extend with new input / output formats</li>
+        <li><strong>Open source</strong> ── full code on GitHub, fork-friendly</li>
       </ul>
     </div>
   </section>
@@ -207,18 +203,11 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   </style>
 
   <script>
-    import { createWorkerPool, recommendedPoolSize } from '../lib/worker-pool';
-    import {
-      toCollectionBundle,
-      toTransactionBundle,
-      toNdjson,
-      toPrettyJson,
-      triggerDownload,
-    } from '../lib/output/bundle';
-    import type { FhirAnyResource } from '../lib/fhir/types';
-    import type { ConvertSuccess, ConvertError, DatasetSummary } from '../workers/converter.worker';
+    import { createWorkerPool, recommendedPoolSize } from '../../lib/worker-pool';
+    import { toCollectionBundle, toTransactionBundle, toNdjson, toPrettyJson, triggerDownload } from '../../lib/output/bundle';
+    import type { FhirAnyResource } from '../../lib/fhir/types';
+    import type { DatasetSummary } from '../../workers/converter.worker';
 
-    // === DOM refs ===
     const $file = document.getElementById('file-input') as HTMLInputElement;
     const $folder = document.getElementById('folder-input') as HTMLInputElement;
     const $pickFolder = document.getElementById('pick-folder') as HTMLButtonElement;
@@ -235,7 +224,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     const $outputSummary = document.getElementById('output-summary') as HTMLDivElement;
     const $outputPreview = document.getElementById('output-preview') as HTMLPreElement;
 
-    // === State ===
     interface FileResult {
       jobId: string;
       fileName: string;
@@ -248,17 +236,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     let pool = createWorkerPool(recommendedPoolSize());
     let startTime = 0;
 
-    // Setup pool callbacks
     function setupPool() {
       pool.onProgress((msg) => {
-        // Update specific file's status
         const r = results.get(msg.jobId);
-        if (r) {
-          r.status = msg.phase === 'parse' ? 'parsing' : 'building';
-        }
+        if (r) r.status = msg.phase === 'parse' ? 'parsing' : 'building';
         updateStats();
       });
-
       pool.onJobComplete((msg) => {
         const r = results.get(msg.jobId);
         if (!r) return;
@@ -274,21 +257,16 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         updateOutput();
         updateStats();
       });
-
       pool.onAllDone(() => {
         $cancelBtn.hidden = true;
         const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
-        $progressText.textContent = `完成 · ${elapsed}s`;
+        $progressText.textContent = `Done · ${elapsed}s`;
         $progressFill.style.width = '100%';
       });
     }
     setupPool();
 
-    // === Drag & drop（含資料夾遞迴）===
-    $dropzone.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      $dropzone.classList.add('drag-over');
-    });
+    $dropzone.addEventListener('dragover', (e) => { e.preventDefault(); $dropzone.classList.add('drag-over'); });
     $dropzone.addEventListener('dragleave', () => $dropzone.classList.remove('drag-over'));
     $dropzone.addEventListener('drop', async (e: DragEvent) => {
       e.preventDefault();
@@ -299,12 +277,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       const promises: Promise<void>[] = [];
       for (let i = 0; i < items.length; i++) {
         const entry = (items[i] as any).webkitGetAsEntry?.();
-        if (entry) {
-          promises.push(walkEntry(entry, files));
-        } else {
-          const f = items[i].getAsFile();
-          if (f) files.push(f);
-        }
+        if (entry) promises.push(walkEntry(entry, files));
+        else { const f = items[i].getAsFile(); if (f) files.push(f); }
       }
       await Promise.all(promises);
       processFiles(files);
@@ -312,12 +286,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
     async function walkEntry(entry: any, out: File[]): Promise<void> {
       if (entry.isFile) {
-        return new Promise<void>((resolve) => {
-          entry.file((file: File) => {
-            out.push(file);
-            resolve();
-          });
-        });
+        return new Promise<void>((resolve) => { entry.file((file: File) => { out.push(file); resolve(); }); });
       } else if (entry.isDirectory) {
         const reader = entry.createReader();
         return new Promise<void>((resolve) => {
@@ -329,38 +298,27 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       }
     }
 
-    $file.addEventListener('change', () => {
-      if ($file.files) processFiles(Array.from($file.files));
-    });
+    $file.addEventListener('change', () => { if ($file.files) processFiles(Array.from($file.files)); });
     $pickFolder.addEventListener('click', () => $folder.click());
-    $folder.addEventListener('change', () => {
-      if ($folder.files) processFiles(Array.from($folder.files));
-    });
+    $folder.addEventListener('change', () => { if ($folder.files) processFiles(Array.from($folder.files)); });
 
     $cancelBtn.addEventListener('click', () => {
       pool.cancel();
-      // Recreate pool for next batch
       pool = createWorkerPool(recommendedPoolSize());
       setupPool();
       $cancelBtn.hidden = true;
-      $progressText.textContent = '已取消';
+      $progressText.textContent = 'Cancelled';
     });
 
     async function processFiles(rawFiles: File[]) {
-      // 過濾出支援的格式
-      const supported = rawFiles.filter((f) =>
-        /\.(xlsx?|csv|json)$/i.test(f.name)
-      );
+      const supported = rawFiles.filter((f) => /\.(xlsx?|csv|json)$/i.test(f.name));
       if (supported.length === 0) {
         $fileInfo.hidden = false;
-        $fileInfo.innerHTML = '<span style="color:var(--c-error)">沒有支援的檔案（需 .xlsx / .xls / .csv / .json）</span>';
+        $fileInfo.innerHTML = '<span style="color:var(--c-error)">No supported files (need .xlsx / .xls / .csv / .json)</span>';
         return;
       }
-
       $fileInfo.hidden = false;
-      $fileInfo.innerHTML = `準備處理 <strong>${supported.length}</strong> 個檔案，使用 ${recommendedPoolSize()} 個 Worker 並行...`;
-
-      // Init UI
+      $fileInfo.innerHTML = `Preparing <strong>${supported.length}</strong> files with ${recommendedPoolSize()} parallel workers...`;
       results.clear();
       $resultsList.innerHTML = '';
       $stepProgress.hidden = false;
@@ -368,23 +326,13 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       $stepOutput.hidden = true;
       $cancelBtn.hidden = false;
       startTime = performance.now();
-
-      // 預讀 buffer + 建 jobs
-      const jobs = await Promise.all(
-        supported.map(async (f, i) => {
-          const buf = await f.arrayBuffer();
-          const isJson = /\.json$/i.test(f.name);
-          const jobId = `job-${Date.now()}-${i}`;
-          results.set(jobId, {
-            jobId,
-            fileName: f.name,
-            status: 'pending',
-            resources: [],
-            datasets: [],
-          });
-          return { jobId, fileName: f.name, buffer: buf, isJson };
-        })
-      );
+      const jobs = await Promise.all(supported.map(async (f, i) => {
+        const buf = await f.arrayBuffer();
+        const isJson = /\.json$/i.test(f.name);
+        const jobId = `job-${Date.now()}-${i}`;
+        results.set(jobId, { jobId, fileName: f.name, status: 'pending', resources: [], datasets: [] });
+        return { jobId, fileName: f.name, buffer: buf, isJson };
+      }));
       renderResults();
       pool.submit(jobs);
       updateStats();
@@ -401,17 +349,15 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
       $progressFill.style.width = pct + '%';
       $progressText.textContent = `${completed} / ${total} · ${pct}%`;
-
       const totalResources = arr.reduce((s, r) => s + r.resources.length, 0);
       const totalErrors = arr.reduce((s, r) => s + r.datasets.reduce((s2, d) => s2 + d.errorRows.length, 0), 0);
-
       $progressStats.innerHTML = `
-        <div class="progress-stat"><strong>${active}</strong><span class="label">處理中</span></div>
-        <div class="progress-stat"><strong>${pending}</strong><span class="label">排隊中</span></div>
-        <div class="progress-stat"><strong>${done}</strong><span class="label">完成</span></div>
-        <div class="progress-stat"><strong>${err}</strong><span class="label">失敗</span></div>
-        <div class="progress-stat"><strong>${totalResources}</strong><span class="label">FHIR resource</span></div>
-        <div class="progress-stat"><strong>${totalErrors}</strong><span class="label">轉換錯誤列</span></div>
+        <div class="progress-stat"><strong>${active}</strong><span class="label">Processing</span></div>
+        <div class="progress-stat"><strong>${pending}</strong><span class="label">Queued</span></div>
+        <div class="progress-stat"><strong>${done}</strong><span class="label">Done</span></div>
+        <div class="progress-stat"><strong>${err}</strong><span class="label">Failed</span></div>
+        <div class="progress-stat"><strong>${totalResources}</strong><span class="label">FHIR resources</span></div>
+        <div class="progress-stat"><strong>${totalErrors}</strong><span class="label">Row errors</span></div>
       `;
     }
 
@@ -430,32 +376,23 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         const totalErr = r.datasets.reduce((s, d) => s + d.errorRows.length, 0);
         const unmatched = r.datasets.filter((d) => !d.matchedTemplateId).map((d) => d.sourceDescription);
         const errLists = r.datasets.filter((d) => d.errorRows.length > 0);
-        detail = `<div class="result-detail">產出 ${totalBuilt} 個 resource${totalErr > 0 ? '，' + totalErr + ' 列錯誤' : ''}`;
+        detail = `<div class="result-detail">Generated ${totalBuilt} resources${totalErr > 0 ? `, ${totalErr} row error(s)` : ''}`;
         if (unmatched.length > 0) {
-          detail += `<br/><span style="color:var(--c-warn)">⚠ 找不到對應範本：${unmatched.map(escapeHtml).join('、')}</span>`;
+          detail += `<br/><span style="color:var(--c-warn)">⚠ No template matched: ${unmatched.map(escapeHtml).join(', ')}</span>`;
         }
         if (errLists.length > 0) {
-          const items = errLists.flatMap((d) => d.errorRows.slice(0, 30)).map((e) => `<li>${escapeHtml(e.sourceRef)}：${escapeHtml(e.reason)}</li>`).join('');
-          detail += `<details><summary>看錯誤列（最多顯示 30 條）</summary><ul class="errors-list">${items}</ul></details>`;
+          const items = errLists.flatMap((d) => d.errorRows.slice(0, 30)).map((e) => `<li>${escapeHtml(e.sourceRef)}: ${escapeHtml(e.reason)}</li>`).join('');
+          detail += `<details><summary>Show error rows (up to 30)</summary><ul class="errors-list">${items}</ul></details>`;
         }
-        // Mapping preview：show first record before/after
         if (r.resources.length > 0) {
           const firstResource = r.resources[0];
-          detail += `<details><summary>看第一筆轉換預覽（FHIR resource）</summary><div class="mapping-preview"><div><div class="fhir-label">FHIR ${firstResource.resourceType}</div>${escapeHtml(JSON.stringify(firstResource, null, 2))}</div></div></details>`;
+          detail += `<details><summary>Preview first converted resource</summary><div class="mapping-preview"><div><div class="fhir-label">FHIR ${firstResource.resourceType}</div>${escapeHtml(JSON.stringify(firstResource, null, 2))}</div></div></details>`;
         }
         detail += `</div>`;
       } else {
-        detail = `<div class="result-detail">${r.status === 'parsing' ? '解析中…' : r.status === 'building' ? '建構 FHIR…' : '排隊中'}</div>`;
+        detail = `<div class="result-detail">${r.status === 'parsing' ? 'Parsing…' : r.status === 'building' ? 'Building FHIR…' : 'Queued'}</div>`;
       }
-      return `
-        <div class="result-row ${klass}">
-          <div class="result-head">
-            <span class="result-name">${escapeHtml(r.fileName)}</span>
-            <span class="result-stats">${r.resources.length} resources</span>
-          </div>
-          ${detail}
-        </div>
-      `;
+      return `<div class="result-row ${klass}"><div class="result-head"><span class="result-name">${escapeHtml(r.fileName)}</span><span class="result-stats">${r.resources.length} resources</span></div>${detail}</div>`;
     }
 
     function escapeHtml(s: string): string {
@@ -470,22 +407,15 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
     function updateOutput() {
       const res = allResources();
-      if (res.length === 0) {
-        $stepOutput.hidden = true;
-        return;
-      }
+      if (res.length === 0) { $stepOutput.hidden = true; return; }
       $stepOutput.hidden = false;
-      const byType = res.reduce<Record<string, number>>((acc, r) => {
-        acc[r.resourceType] = (acc[r.resourceType] ?? 0) + 1;
-        return acc;
-      }, {});
-      $outputSummary.innerHTML = `共 <strong>${res.length}</strong> 個 FHIR resource：${Object.entries(byType).map(([k, v]) => `${k} × ${v}`).join(' · ')}`;
+      const byType = res.reduce<Record<string, number>>((acc, r) => { acc[r.resourceType] = (acc[r.resourceType] ?? 0) + 1; return acc; }, {});
+      $outputSummary.innerHTML = `<strong>${res.length}</strong> FHIR resources: ${Object.entries(byType).map(([k, v]) => `${k} × ${v}`).join(' · ')}`;
       const bundle = toCollectionBundle(res);
       const json = toPrettyJson(bundle);
       $outputPreview.textContent = json.slice(0, 5000) + (json.length > 5000 ? '\n... (truncated for preview, full output in download)' : '');
     }
 
-    // Download handlers
     document.querySelectorAll<HTMLButtonElement>('.output-actions button').forEach((btn) => {
       btn.addEventListener('click', async () => {
         const res = allResources();
@@ -499,7 +429,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         } else if (fmt === 'ndjson') {
           triggerDownload(toNdjson(res), `fhir-${ts}.ndjson`, 'application/x-ndjson');
         } else if (fmt === 'zip-per-file') {
-          // Per-file mode：每個 input file 一個 Bundle，打包成 zip
           const JSZip = (await import('jszip')).default;
           const zip = new JSZip();
           for (const r of results.values()) {

@@ -2,20 +2,69 @@
 export interface Props {
   title: string;
   description?: string;
+  lang?: 'zh-Hant' | 'en';
 }
-const {
-  title,
-  description = 'clinconvert ── 把 XLS / CSV / JSON 病歷資料轉成 FHIR R4 標準格式。瀏覽器本地處理、檔案不離本地。',
-} = Astro.props;
+
+const { title, description, lang = 'zh-Hant' } = Astro.props;
+
+const isEn = lang === 'en';
+
+const t = isEn
+  ? {
+      brandName: 'clinconvert',
+      navHow: 'How it works',
+      navTemplates: 'Templates',
+      navGithub: 'GitHub',
+      themeLabel: 'Toggle light/dark mode',
+      langLabel: 'Switch to Traditional Chinese',
+      langText: '中',
+      footerCopyright:
+        '© 2026 Chia-Yu Chiang · A tool from the Clin- series, alongside ClinCalc / ExClinCalc / Kaizei.',
+      footerPrivacy:
+        'All processing happens in your browser. No data ever leaves your device. Built with Astro on Cloudflare Pages.',
+      defaultDesc:
+        'clinconvert ── Convert XLS / CSV / JSON clinical data to HL7 FHIR R4. 100% browser-local processing; your files never leave your device.',
+    }
+  : {
+      brandName: 'clinconvert',
+      navHow: '使用方式',
+      navTemplates: '範本',
+      navGithub: 'GitHub',
+      themeLabel: '切換深淺色',
+      langLabel: 'Switch to English',
+      langText: 'EN',
+      footerCopyright:
+        '© 2026 江家寓 · Clin- 系列工具，與 ClinCalc / ExClinCalc / Kaizei 共構。',
+      footerPrivacy:
+        '資料完全在你的瀏覽器處理，不送到任何伺服器。Built with Astro on Cloudflare Pages.',
+      defaultDesc:
+        'clinconvert ── 把 XLS / CSV / JSON 病歷資料轉成 FHIR R4 標準格式。瀏覽器本地處理、檔案不離本地。',
+    };
+
+const desc = description ?? t.defaultDesc;
+const homeHref = isEn ? '/en/' : '/';
 ---
 <!doctype html>
-<html lang="zh-Hant">
+<html lang={lang}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
-    <meta name="description" content={description} />
+    <meta name="description" content={desc} />
+    <meta name="color-scheme" content="light dark" />
+
+    <script is:inline>
+      (function () {
+        try {
+          var stored = localStorage.getItem('theme');
+          var theme = stored || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+          document.documentElement.dataset.theme = theme;
+        } catch (e) {
+          document.documentElement.dataset.theme = 'light';
+        }
+      })();
+    </script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -24,14 +73,24 @@ const {
   <body>
     <header class="site-header">
       <div class="container">
-        <a href="/" class="brand">
+        <a href={homeHref} class="brand">
           <span class="brand-mark">⇄</span>
-          <span class="brand-name">clinconvert</span>
+          <span class="brand-name">{t.brandName}</span>
         </a>
         <nav class="nav-links">
-          <a href="/#how">How it works</a>
-          <a href="/#templates">Templates</a>
-          <a href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
+          <a href={`${homeHref}#how`}>{t.navHow}</a>
+          <a href={`${homeHref}#templates`}>{t.navTemplates}</a>
+          <a href="https://github.com/RO883C" target="_blank" rel="noopener">{t.navGithub}</a>
+          <button class="icon-btn" id="theme-toggle" type="button" aria-label={t.themeLabel}>
+            <svg class="icn icn-moon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+            <svg class="icn icn-sun" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="4"/>
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+            </svg>
+          </button>
+          <button class="icon-btn lang-btn" id="lang-toggle" type="button" aria-label={t.langLabel}>{t.langText}</button>
         </nav>
       </div>
     </header>
@@ -42,15 +101,37 @@ const {
 
     <footer class="site-footer">
       <div class="container">
-        <p>
-          <strong>clinconvert</strong> · XLS / CSV / JSON → FHIR R4 轉換工具 ·
-          <a href="https://jiayuselfweb.pages.dev/" target="_blank" rel="noopener">江家寓的作品</a>
-        </p>
-        <p class="muted">
-          資料完全在你的瀏覽器處理，不送到任何伺服器。Built with Astro on Cloudflare Pages.
-        </p>
+        <p><strong>clinconvert</strong> · <a href="https://jiayuselfweb.pages.dev/" target="_blank" rel="noopener">{isEn ? "Chia-Yu Chiang's portfolio" : '江家寓的作品集'}</a></p>
+        <p class="muted">{t.footerPrivacy}</p>
+        <p class="muted">{t.footerCopyright}</p>
       </div>
     </footer>
+
+    <script is:inline>
+      (function () {
+        function init() {
+          var btn = document.getElementById('theme-toggle');
+          if (btn) btn.addEventListener('click', function () {
+            var cur = document.documentElement.dataset.theme;
+            var next = cur === 'dark' ? 'light' : 'dark';
+            document.documentElement.dataset.theme = next;
+            try { localStorage.setItem('theme', next); } catch (e) {}
+          });
+
+          var langBtn = document.getElementById('lang-toggle');
+          if (langBtn) langBtn.addEventListener('click', function () {
+            var path = location.pathname;
+            if (path.indexOf('/en/') === 0 || path === '/en') {
+              location.pathname = path.replace(/^\/en/, '') || '/';
+            } else {
+              location.pathname = '/en' + path;
+            }
+          });
+        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+        else init();
+      })();
+    </script>
 
     <style is:global>
       :root {
@@ -59,19 +140,45 @@ const {
         --c-accent: #f97316;
         --c-bg: #ffffff;
         --c-bg-soft: #f8fafc;
+        --c-bg-card: #ffffff;
         --c-text: #0f172a;
         --c-text-muted: #475569;
         --c-text-soft: #94a3b8;
         --c-border: #e2e8f0;
         --c-success: #15803d;
+        --c-success-bg: #ecfdf5;
         --c-warn: #b45309;
+        --c-warn-bg: #fffbeb;
         --c-error: #b91c1c;
+        --c-error-bg: #fef2f2;
+        --c-code-bg: #0f172a;
+        --c-code-text: #e2e8f0;
         --max-w: 1080px;
-        --font-sans: "Inter", "PingFang TC", "Microsoft JhengHei", sans-serif;
+        --font-sans: "Inter", "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
         --font-mono: "JetBrains Mono", monospace;
       }
+      :root[data-theme="dark"] {
+        --c-primary: #2dd4bf;
+        --c-primary-light: #5eead4;
+        --c-accent: #fb923c;
+        --c-bg: #0b1220;
+        --c-bg-soft: #131c30;
+        --c-bg-card: #1a2238;
+        --c-text: #e6edf7;
+        --c-text-muted: #b8c4d6;
+        --c-text-soft: #6b7891;
+        --c-border: #2a3550;
+        --c-success: #4ade80;
+        --c-success-bg: rgba(74, 222, 128, 0.08);
+        --c-warn: #fbbf24;
+        --c-warn-bg: rgba(251, 191, 36, 0.08);
+        --c-error: #f87171;
+        --c-error-bg: rgba(248, 113, 113, 0.08);
+        --c-code-bg: #050a14;
+        --c-code-text: #d1d9e6;
+      }
+      html { color-scheme: light dark; scroll-behavior: smooth; }
       * { box-sizing: border-box; margin: 0; padding: 0; }
-      html { scroll-behavior: smooth; }
       body {
         font-family: var(--font-sans);
         font-size: 16px;
@@ -80,6 +187,7 @@ const {
         background: var(--c-bg);
         word-break: keep-all;
         overflow-wrap: break-word;
+        transition: background-color 0.2s, color 0.2s;
       }
       a { color: var(--c-primary); text-decoration: none; }
       a:hover { color: var(--c-primary-light); }
@@ -88,26 +196,38 @@ const {
       h2 { font-size: 1.75rem; margin: 2rem 0 0.75rem; }
       h3 { font-size: 1.2rem; margin: 1.25rem 0 0.5rem; }
       p { color: var(--c-text-muted); margin-bottom: 1em; }
-      code { font-family: var(--font-mono); background: var(--c-bg-soft); padding: 1px 6px; border-radius: 4px; font-size: 0.9em; }
-      pre { background: var(--c-bg-soft); padding: 1rem; border-radius: 8px; overflow-x: auto; border: 1px solid var(--c-border); margin: 1em 0; font-size: 0.85em; }
+      code { font-family: var(--font-mono); background: var(--c-bg-soft); padding: 1px 6px; border-radius: 4px; font-size: 0.9em; color: var(--c-text); }
+      pre { background: var(--c-code-bg); color: var(--c-code-text); padding: 1rem; border-radius: 8px; overflow-x: auto; margin: 1em 0; font-size: 0.82em; line-height: 1.5; }
+      pre code { background: transparent; padding: 0; color: inherit; }
       .container { max-width: var(--max-w); margin: 0 auto; padding: 0 20px; }
       .muted { color: var(--c-text-soft); font-size: 0.9em; }
+      .nowrap, .brand-name { white-space: nowrap; }
 
-      .site-header { border-bottom: 1px solid var(--c-border); background: var(--c-bg); position: sticky; top: 0; z-index: 50; backdrop-filter: blur(8px); }
+      .site-header { border-bottom: 1px solid var(--c-border); background: color-mix(in srgb, var(--c-bg) 92%, transparent); position: sticky; top: 0; z-index: 50; backdrop-filter: blur(8px); transition: background-color 0.2s, border-color 0.2s; }
       .site-header .container { display: flex; justify-content: space-between; align-items: center; padding-top: 0.85rem; padding-bottom: 0.85rem; }
       .brand { display: inline-flex; align-items: center; gap: 0.5rem; color: var(--c-text); font-weight: 700; }
       .brand-mark { color: var(--c-primary); font-size: 1.3rem; }
-      .brand-name { letter-spacing: -0.01em; }
-      .nav-links { display: flex; gap: 1.25rem; }
-      .nav-links a { color: var(--c-text-muted); font-size: 0.92rem; }
-      .nav-links a:hover { color: var(--c-primary); }
+      .nav-links { display: flex; gap: 1rem; align-items: center; }
+      .nav-links > a { color: var(--c-text-muted); font-size: 0.92rem; }
+      .nav-links > a:hover { color: var(--c-primary); }
 
-      .site-footer { border-top: 1px solid var(--c-border); margin-top: 5rem; padding: 2rem 0; background: var(--c-bg-soft); }
+      .icon-btn { background: none; border: none; padding: 0.4rem; cursor: pointer; color: var(--c-text-muted); display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; transition: color 0.15s, background-color 0.15s; font-family: inherit; font-size: 0.85rem; font-weight: 600; min-width: 32px; }
+      .icon-btn:hover { color: var(--c-text); background: var(--c-bg-soft); }
+      .icn { display: none; }
+      :root[data-theme="light"] .icn-moon, :root:not([data-theme]) .icn-moon { display: inline-block; }
+      :root[data-theme="dark"] .icn-sun { display: inline-block; }
+      .lang-btn { letter-spacing: 0.02em; }
+
+      .site-footer { border-top: 1px solid var(--c-border); margin-top: 5rem; padding: 2rem 0; background: var(--c-bg-soft); transition: background-color 0.2s, border-color 0.2s; }
       .site-footer p { margin-bottom: 0.3rem; font-size: 0.9rem; }
+
+      :focus-visible { outline: 2px solid var(--c-primary); outline-offset: 2px; border-radius: 3px; }
 
       @media (max-width: 640px) {
         h1 { font-size: 1.8rem; }
         h2 { font-size: 1.4rem; }
+        .nav-links { gap: 0.5rem; }
+        .nav-links > a { font-size: 0.85rem; }
       }
     </style>
   </body>
