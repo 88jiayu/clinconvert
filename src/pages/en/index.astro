@@ -57,11 +57,15 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         <div class="step-label">Step 4 · Download FHIR Bundles</div>
         <div class="output-summary" id="output-summary"></div>
         <div class="output-actions">
+          <button type="button" data-format="organized" class="primary-cta">📦 Organized export (zip)</button>
           <button type="button" data-format="collection">⬇ Bundle (collection)</button>
           <button type="button" data-format="transaction">⬇ Transaction Bundle</button>
           <button type="button" data-format="ndjson">⬇ NDJSON</button>
           <button type="button" data-format="zip-per-file" class="secondary">⬇ Per-file zip</button>
         </div>
+        <p class="muted output-hint">
+          💡 The <strong>Organized export</strong> contains: resources grouped by type, grouped per patient, a README summary, errors.csv, and unmatched.csv — <strong>this is the one to send to a clinic IT</strong>.
+        </p>
         <details class="preview">
           <summary>Preview JSON (first 5,000 chars)</summary>
           <pre id="output-preview"></pre>
@@ -188,6 +192,9 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     .output-actions button:hover { background: var(--c-primary-light); }
     .output-actions button.secondary { background: var(--c-bg-card); color: var(--c-text); border: 1px solid var(--c-border); }
     .output-actions button.secondary:hover { border-color: var(--c-primary); color: var(--c-primary); }
+    .output-actions button.primary-cta { background: var(--c-accent); font-weight: 700; padding-left: 1.25rem; padding-right: 1.25rem; }
+    .output-actions button.primary-cta:hover { background: color-mix(in srgb, var(--c-accent) 80%, white); }
+    .output-hint { font-size: 0.85rem; margin-top: 0.85rem; line-height: 1.6; }
     .preview { margin-top: 1rem; }
     .preview summary { cursor: pointer; font-size: 0.9rem; color: var(--c-text-muted); margin-bottom: 0.5rem; }
     .preview pre { max-height: 320px; overflow: auto; font-size: 0.78rem; line-height: 1.5; }
@@ -205,6 +212,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   <script>
     import { createWorkerPool, recommendedPoolSize } from '../../lib/worker-pool';
     import { toCollectionBundle, toTransactionBundle, toNdjson, toPrettyJson, triggerDownload } from '../../lib/output/bundle';
+    import { organize, buildOrganizedZip, type FileOutcome } from '../../lib/output/organizer';
     import type { FhirAnyResource } from '../../lib/fhir/types';
     import type { DatasetSummary } from '../../workers/converter.worker';
 
@@ -439,16 +447,32 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             }
           }
           const blob = await zip.generateAsync({ type: 'blob' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `fhir-bundles-${ts}.zip`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
+          downloadBlob(blob, `fhir-bundles-${ts}.zip`);
+        } else if (fmt === 'organized') {
+          const outcomes: FileOutcome[] = Array.from(results.values()).map((r) => ({
+            fileName: r.fileName,
+            status: r.status === 'done' ? 'done' : 'error',
+            resources: r.resources,
+            datasets: r.datasets,
+            error: r.error,
+          }));
+          const elapsed = performance.now() - startTime;
+          const organized = organize(outcomes, elapsed);
+          const blob = await buildOrganizedZip(organized, 'en');
+          downloadBlob(blob, `clinconvert-organized-${ts}.zip`);
         }
       });
     });
+
+    function downloadBlob(blob: Blob, filename: string) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
   </script>
 </BaseLayout>

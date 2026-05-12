@@ -61,11 +61,15 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         <div class="step-label">Step 4 · 下載 FHIR Bundle</div>
         <div class="output-summary" id="output-summary"></div>
         <div class="output-actions">
+          <button type="button" data-format="organized" class="primary-cta">📦 完整整理包（zip）</button>
           <button type="button" data-format="collection">⬇ Bundle (collection)</button>
           <button type="button" data-format="transaction">⬇ Transaction Bundle</button>
           <button type="button" data-format="ndjson">⬇ NDJSON</button>
           <button type="button" data-format="zip-per-file" class="secondary">⬇ 每檔分開（zip）</button>
         </div>
+        <p class="muted output-hint">
+          💡 <strong>完整整理包</strong>內含：依 resource type 分組、依病人分組、統計報告 (README)、錯誤列表 (errors.csv)、未匹配範本 (unmatched.csv) ── <strong>診所直接用這個</strong>。
+        </p>
         <details class="preview">
           <summary>預覽 JSON（前 5000 字）</summary>
           <pre id="output-preview"></pre>
@@ -192,6 +196,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     .output-actions button:hover { background: var(--c-primary-light); }
     .output-actions button.secondary { background: var(--c-bg-card); color: var(--c-text); border: 1px solid var(--c-border); }
     .output-actions button.secondary:hover { border-color: var(--c-primary); color: var(--c-primary); }
+    .output-actions button.primary-cta { background: var(--c-accent); font-weight: 700; padding-left: 1.25rem; padding-right: 1.25rem; }
+    .output-actions button.primary-cta:hover { background: color-mix(in srgb, var(--c-accent) 80%, white); }
+    .output-hint { font-size: 0.85rem; margin-top: 0.85rem; line-height: 1.6; }
     .preview { margin-top: 1rem; }
     .preview summary { cursor: pointer; font-size: 0.9rem; color: var(--c-text-muted); margin-bottom: 0.5rem; }
     .preview pre { max-height: 320px; overflow: auto; font-size: 0.78rem; line-height: 1.5; }
@@ -215,6 +222,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       toPrettyJson,
       triggerDownload,
     } from '../lib/output/bundle';
+    import { organize, buildOrganizedZip, formatReport, type FileOutcome } from '../lib/output/organizer';
     import type { FhirAnyResource } from '../lib/fhir/types';
     import type { ConvertSuccess, ConvertError, DatasetSummary } from '../workers/converter.worker';
 
@@ -510,16 +518,33 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             }
           }
           const blob = await zip.generateAsync({ type: 'blob' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `fhir-bundles-${ts}.zip`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
+          downloadBlob(blob, `fhir-bundles-${ts}.zip`);
+        } else if (fmt === 'organized') {
+          // 完整整理包：分類、分病人、統計、錯誤
+          const outcomes: FileOutcome[] = Array.from(results.values()).map((r) => ({
+            fileName: r.fileName,
+            status: r.status === 'done' ? 'done' : 'error',
+            resources: r.resources,
+            datasets: r.datasets,
+            error: r.error,
+          }));
+          const elapsed = performance.now() - startTime;
+          const organized = organize(outcomes, elapsed);
+          const blob = await buildOrganizedZip(organized, 'zh');
+          downloadBlob(blob, `clinconvert-organized-${ts}.zip`);
         }
       });
     });
+
+    function downloadBlob(blob: Blob, filename: string) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
   </script>
 </BaseLayout>
