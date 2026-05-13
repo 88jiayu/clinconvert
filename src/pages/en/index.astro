@@ -213,6 +213,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     import { createWorkerPool, recommendedPoolSize } from '../../lib/worker-pool';
     import { toCollectionBundle, toTransactionBundle, toNdjson, toPrettyJson, triggerDownload } from '../../lib/output/bundle';
     import { organize, buildOrganizedZip, type FileOutcome } from '../../lib/output/organizer';
+    import { loadCustomTemplates } from '../../lib/mapping/custom';
     import type { FhirAnyResource } from '../../lib/fhir/types';
     import type { DatasetSummary } from '../../workers/converter.worker';
 
@@ -340,12 +341,16 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       $stepOutput.hidden = true;
       $cancelBtn.hidden = false;
       startTime = performance.now();
+      const customTemplates = loadCustomTemplates();
+      if (customTemplates.length > 0) {
+        $fileInfo.innerHTML += `<br/><span class="muted" style="font-size:0.82rem;">📐 with ${customTemplates.length} custom template(s)</span>`;
+      }
       const jobs = await Promise.all(supported.map(async (f, i) => {
         const buf = await f.arrayBuffer();
         const isJson = /\.json$/i.test(f.name);
         const jobId = `job-${Date.now()}-${i}`;
         results.set(jobId, { jobId, fileName: f.name, status: 'pending', resources: [], datasets: [] });
-        return { jobId, fileName: f.name, buffer: buf, isJson };
+        return { jobId, fileName: f.name, buffer: buf, isJson, customTemplates };
       }));
       renderResults();
       pool.submit(jobs);

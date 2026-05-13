@@ -223,6 +223,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       triggerDownload,
     } from '../lib/output/bundle';
     import { organize, buildOrganizedZip, formatReport, type FileOutcome } from '../lib/output/organizer';
+    import { loadCustomTemplates } from '../lib/mapping/custom';
     import type { FhirAnyResource } from '../lib/fhir/types';
     import type { ConvertSuccess, ConvertError, DatasetSummary } from '../workers/converter.worker';
 
@@ -387,6 +388,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       $cancelBtn.hidden = false;
       startTime = performance.now();
 
+      // 載入使用者自訂範本（從 localStorage、Mapping Designer 儲存的）
+      const customTemplates = loadCustomTemplates();
+      if (customTemplates.length > 0) {
+        $fileInfo.innerHTML += `<br/><span class="muted" style="font-size:0.82rem;">📐 含 ${customTemplates.length} 個自訂範本</span>`;
+      }
+
       // 預讀 buffer + 建 jobs
       const jobs = await Promise.all(
         supported.map(async (f, i) => {
@@ -400,7 +407,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             resources: [],
             datasets: [],
           });
-          return { jobId, fileName: f.name, buffer: buf, isJson };
+          return { jobId, fileName: f.name, buffer: buf, isJson, customTemplates };
         })
       );
       renderResults();

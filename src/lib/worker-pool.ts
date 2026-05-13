@@ -18,12 +18,14 @@ import type {
   ConvertSuccess,
   ConvertError,
 } from '../workers/converter.worker';
+import type { MappingTemplate } from './mapping/templates';
 
 export interface PoolJob {
   jobId: string;
   fileName: string;
   buffer: ArrayBuffer;
   isJson: boolean;
+  customTemplates?: MappingTemplate[];
 }
 
 export interface WorkerPool {
@@ -106,6 +108,7 @@ export function createWorkerPool(size: number = 4): WorkerPool {
       fileName: job.fileName,
       buffer: job.buffer,
       isJson: job.isJson,
+      customTemplates: job.customTemplates,
     };
     // Transfer buffer ownership to worker for zero-copy
     slot.worker.postMessage(message, [job.buffer]);

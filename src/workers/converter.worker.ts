@@ -29,6 +29,12 @@ export interface ConvertJob {
   fileName: string;
   buffer: ArrayBuffer;
   isJson: boolean;
+  /**
+   * 主執行緒可以傳入額外的自訂範本（從 localStorage 讀的）。
+   * Worker 不能讀 localStorage，所以靠主執行緒傳。
+   * 跟內建 ALL_TEMPLATES 合併後用 suggestTemplate() 邏輯匹配。
+   */
+  customTemplates?: MappingTemplate[];
 }
 
 export interface ConvertProgress {
@@ -70,8 +76,24 @@ export type WorkerMessage = ConvertProgress | ConvertSuccess | ConvertError;
 
 const ctx = self as unknown as DedicatedWorkerGlobalScope;
 
+/** Suggest 範本：先掃自訂範本（user 自己定義的優先），再掃內建 */
+function suggestTemplateWith(
+  datasetName: string,
+  customs: MappingTemplate[] = []
+): MappingTemplate | undefined {
+  // Custom first（使用者刻意建的範本應該優先於內建）
+  for (const t of customs) {
+    if (!t.datasetMatch) continue;
+    const re = typeof t.datasetMatch === 'string'
+      ? new RegExp(t.datasetMatch, 'i')
+      : t.datasetMatch;
+    if (re.test(datasetName)) return t;
+  }
+  return suggestTemplate(datasetName);
+}
+
 ctx.onmessage = async (e: MessageEvent<ConvertJob>) => {
-  const { jobId, fileName, buffer, isJson } = e.data;
+  const { jobId, fileName, buffer, isJson, customTemplates } = e.data;
 
   try {
     // === Phase 1: parse ===
@@ -94,7 +116,7 @@ ctx.onmessage = async (e: MessageEvent<ConvertJob>) => {
     let processed = 0;
 
     for (const dataset of datasets) {
-      const template = suggestTemplate(dataset.sourceDescription);
+      const template = suggestTemplateWith(dataset.sourceDescription, customTemplates);
       const summary: DatasetSummary = {
         sourceDescription: dataset.sourceDescription,
         rowCount: dataset.records.length,
