@@ -6,17 +6,28 @@
 
 ---
 
-## 為什麼做這個
+## 為什麼做這個（定位與限制）
 
-衛福部 2026 年目標完成全台**醫學中心 FHIR 電子病歷互通**（中山、長庚、馬偕已示範完成）；2028 年擴及衛生所、診所。
+台灣衛福部正在推動以 **FHIR R4** 為國家醫療資訊互通標準。目前**中山、長庚、馬偕等示範醫院**已導入；政策路線圖未來覆蓋區域醫院與診所，但**現階段仍處於少數大型醫院實作階段**，診所端目前並沒有實際在做 FHIR 轉檔。
 
-但**中小型診所、護理之家、研究者**手上的資料還在 Excel / CSV 階段。`clinconvert` 是給這個過渡情境用的工具：
+`clinconvert` 是一個 **research-grade proof-of-concept**，**不是**「現在能給診所直接用的 production tool」。它的存在價值在：
 
-- 把 Excel 病人名冊 → FHIR Patient bundle
-- 把體檢 XLS → FHIR Observation（含 LOINC 編碼）
-- 把自家 schema JSON → 標準 FHIR R4 resource
+- **工程展示**：完整實作 XLS / CSV / JSON → FHIR R4 batch pipeline、Adapter pattern、Web Worker pool、結構驗證、PWA 離線
+- **研究議題**：探索「醫療資料本地處理 + LLM 安全嵌入 + 大架構整合」這幾個我關心的設計議題
+- **學習材料**：開源 + 文件完整，供其他開發者學習 FHIR R4 結構
 
-大醫院的 HIS DB → FHIR 已有 [MIRTH Connect](https://www.nextgen.com/products-and-services/integration-engine) 與 [HAPI FHIR](https://hapifhir.io/) 等 ETL 框架。本工具填補的是「**資料還在 Excel 階段**」的小場景。
+### 跟既有開源專案的關係
+
+台灣已有更成熟的開源專案，例如 **[療心智能 Taiwan-Health-MCP](https://github.com/healthymind-tech/Taiwan-Health-MCP)**（148 stars；Python + FastMCP + PostgreSQL；整合 ICD-10 / LOINC / 台灣 FDA 資料），他們做的是「**FHIR 資料 → LLM 透過 MCP 協議查詢**」。
+
+`clinconvert` 解決的是不同層次的問題：「**Excel 資料 → FHIR Bundle**」── 這是 pre-step，跟前者互補不重疊。
+
+### 真正臨床落地需要的東西（本工具不解決，但要意識到）
+
+- **合規傳輸加密**：醫療資料跨系統傳輸涉及個資法、HIPAA 對應要求、AES-GCM 等規定的加密方式
+- **HIS / EMR 架構整合**：standalone tool 沒辦法落實，必須跟既有臨床系統打通
+- **FHIR 認證的 server 端**：HAPI FHIR、Smile CDR 等 production-grade server
+- **臨床安全驗證**：HAPI FHIR validator、Inferno (ONC-HIT) 等專業工具
 
 ---
 

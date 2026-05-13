@@ -113,23 +113,36 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
   <section class="container context-section">
     <div class="context">
-      <h2>About this tool</h2>
+      <h2>About this tool (scope &amp; limitations)</h2>
       <p>
-        Taiwan's Ministry of Health and Welfare targets <strong>FHIR-based EMR interoperability across all medical centers by end of 2026</strong>
-        (Chung Shan, Chang Gung, MacKay already piloted). By 2028 the program extends to community clinics and public health centers.
+        Taiwan's Ministry of Health and Welfare is rolling FHIR R4 as the national health-data interoperability standard.
+        A small set of <strong>pilot medical centers (Chung Shan, Chang Gung, MacKay)</strong> have implemented it; the official roadmap
+        eventually covers regional hospitals and clinics, but adoption today is still concentrated in a handful of large hospitals.
       </p>
       <p>
-        <strong>clinconvert fills the gap for small clinics, long-term care facilities, and researchers</strong> whose data still lives in Excel.
-        Large hospital HIS → FHIR pipelines run on MIRTH Connect or HAPI FHIR; this tool covers the "Excel era" — and the
-        architecture handles hundreds of files at a time via Web Worker parallelism.
+        <strong>clinconvert is a research-grade proof-of-concept</strong>, not a "production tool for clinics today."
+        Real clinics aren't doing FHIR conversion yet, and medical data exchange comes with strict regulatory + encryption requirements
+        that demand integration with a larger HIS / EMR architecture — which a standalone browser tool cannot provide.
       </p>
-      <p>Design choices:</p>
+      <p>
+        More mature open-source projects already exist for Taiwan healthcare data, e.g.
+        <a href="https://github.com/healthymind-tech/Taiwan-Health-MCP" target="_blank" rel="noopener"><strong>HealthyMind's Taiwan-Health-MCP</strong></a>
+        (148 stars; Python + FastMCP + PostgreSQL; integrates ICD-10 / LOINC / Taiwan FDA data for LLM access via the Model Context Protocol).
+        clinconvert addresses a <strong>different layer</strong>: that project exposes FHIR data to LLMs, while this tool focuses on the
+        pre-step of converting Excel-era data <em>into</em> FHIR Bundles.
+      </p>
+      <p>What this tool demonstrates / explores:</p>
       <ul>
-        <li><strong>Browser-local processing</strong> ── patient data never leaves your device</li>
-        <li><strong>Web Worker Pool parallelism</strong> ── main thread stays responsive; large batches feasible</li>
-        <li><strong>Adapter pattern</strong> ── easy to extend with new input / output formats</li>
-        <li><strong>Open source</strong> ── full code on GitHub, fork-friendly</li>
+        <li><strong>Browser-local processing</strong> ── aligned with the principle that privacy-sensitive medical data should stay local</li>
+        <li><strong>Web Worker Pool parallelism</strong> ── exploring the practical limits of client-side batch processing</li>
+        <li><strong>Adapter pattern</strong> ── architecture prepared for future HL7 v2 / DICOM input formats</li>
+        <li><strong>Structural validation</strong> ── FHIR R4 required-field, enum, and reference-integrity checks</li>
+        <li><strong>Open source</strong> ── full source on GitHub, intended as a starting point for learning / research, not production</li>
       </ul>
+      <p style="margin-top: 1rem; padding: 0.85rem 1rem; background: var(--c-warn-bg); border-left: 3px solid var(--c-warn); border-radius: 0 6px 6px 0; color: var(--c-warn);">
+        ⚠️ <strong>Validate output via professional tools (e.g. HAPI FHIR validator) before any clinical use.</strong>
+        This tool makes no clinical safety guarantees and must operate within applicable medical data regulations.
+      </p>
     </div>
   </section>
 

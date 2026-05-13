@@ -117,23 +117,32 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
   <section class="container context-section">
     <div class="context">
-      <h2>關於這個工具</h2>
+      <h2>關於這個工具（定位與限制）</h2>
       <p>
-        衛福部 2026 年目標完成全台<strong>醫學中心 FHIR 電子病歷互通</strong>（中山、長庚、馬偕已示範完成）。
-        到 2028 年將擴及衛生所與診所。
+        台灣衛福部正在推動以 FHIR R4 作為國家醫療資訊互通標準，目前<strong>中山、長庚、馬偕等示範醫院</strong>已導入；
+        未來政策路線圖涵蓋區域醫院與診所，但現階段仍處於少數大型醫院實作階段。
       </p>
       <p>
-        <strong>clinconvert 是給「中小型診所、護理之家、研究者」過渡到 FHIR 用的轉換工具</strong>。
-        大醫院的 HIS DB → FHIR 用 MIRTH Connect 或 HAPI FHIR；本工具補位「資料還在 Excel 階段」的小規模場景，
-        但**架構支援批次處理幾百個檔**（Web Worker Pool 並行）。
+        <strong>clinconvert 是研究型的 proof-of-concept</strong> ──
+        目的不是成為診所現用工具。真正的診所場景目前還沒在做 FHIR 轉檔，
+        而且醫療資料傳輸有嚴格的合規與加密要求，需要在更大的 HIS / EMR 架構下整合才能落實。
       </p>
-      <p>設計選擇：</p>
+      <p>
+        台灣已有更成熟的開源專案，例如 <a href="https://github.com/healthymind-tech/Taiwan-Health-MCP" target="_blank" rel="noopener"><strong>療心智能 Taiwan-Health-MCP</strong></a>（148 stars，
+        Python + FastMCP + PostgreSQL，整合 ICD-10 / LOINC / 台灣 FDA 資料供 LLM 使用）。
+        clinconvert 跟它<strong>目標不同</strong>：前者解決「FHIR 資料 → LLM 查詢」，本工具聚焦「Excel 資料 → FHIR Bundle」這個 pre-step。
+      </p>
+      <p>本工具的工程展示 / 研究議題：</p>
       <ul>
-        <li><strong>瀏覽器本地處理</strong> ── 醫療資料不離開使用者裝置</li>
-        <li><strong>Web Worker Pool 並行</strong> ── 主執行緒不卡、可處理大批檔案</li>
-        <li><strong>Adapter pattern</strong> ── 容易擴充新的輸入 / 輸出格式</li>
-        <li><strong>開源</strong> ── 完整程式碼在 GitHub，歡迎 fork 客製</li>
+        <li><strong>瀏覽器本地處理</strong> ── 對應「強調隱私的醫療資料應在 local 端處理」的設計原則</li>
+        <li><strong>Web Worker Pool 並行</strong> ── 探索 client-side 大批檔處理的可行界線</li>
+        <li><strong>Adapter pattern</strong> ── 為將來擴充 HL7 v2 / DICOM 等格式預留架構</li>
+        <li><strong>結構驗證</strong> ── FHIR R4 必填、enum、reference integrity 等檢查</li>
+        <li><strong>開源</strong> ── 程式碼在 GitHub，作為學習與研究 FHIR 整合的起點</li>
       </ul>
+      <p style="margin-top: 1rem; padding: 0.85rem 1rem; background: var(--c-warn-bg); border-left: 3px solid var(--c-warn); border-radius: 0 6px 6px 0; color: var(--c-warn);">
+        ⚠️ <strong>正式臨床使用前需通過 HAPI FHIR validator 等專業驗證</strong>，並符合台灣個資法與醫療資訊相關規範。本工具不對輸出做臨床安全保證。
+      </p>
     </div>
   </section>
 
