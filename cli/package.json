@@ -1,0 +1,25 @@
+{
+  "name": "@clinconvert/cli",
+  "version": "0.1.0",
+  "description": "clinconvert CLI — Batch convert XLS/CSV/JSON clinical data to FHIR R4 from the command line. Handles thousands of files without browser memory limits.",
+  "type": "module",
+  "bin": {
+    "clinconvert": "./bin/clinconvert.mjs"
+  },
+  "files": ["bin/", "README.md"],
+  "scripts": {
+    "start": "node bin/clinconvert.mjs",
+    "test": "node bin/clinconvert.mjs --help"
+  },
+  "keywords": ["fhir", "fhir-r4", "hl7", "medical", "xlsx", "csv", "cli", "healthcare"],
+  "license": "MIT",
+  "author": "Chia-Yu Chiang <yuyulsc881209@icloud.com>",
+  "homepage": "https://clinconvert.pages.dev/",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "jszip": "^3.10.1",
+    "xlsx": "^0.18.5"
+  }
+}

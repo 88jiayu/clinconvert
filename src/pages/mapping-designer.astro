@@ -1,0 +1,355 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+<BaseLayout title="Mapping Designer — clinconvert">
+  <section class="hero container">
+    <h1>Mapping Designer</h1>
+    <p class="lead">
+      診所欄位名稱跟內建範本不同？這裡可以自訂「欄位 → FHIR field」映射，
+      存在你瀏覽器本地，匯出 / 匯入 JSON 帶回首頁套用。
+    </p>
+    <p class="privacy">
+      🔒 範本存在 <code>localStorage</code>，不上傳。可匯出 JSON 分享給同事。
+    </p>
+  </section>
+
+  <section class="container">
+    <div class="designer">
+
+      <!-- New template -->
+      <div class="card">
+        <div class="step-label">建立新範本</div>
+        <div class="new-tpl-row">
+          <input type="text" id="new-name" placeholder="範本名稱（例：本院 patients XLS）" />
+          <select id="new-rt">
+            <option value="Patient">Patient</option>
+            <option value="Encounter">Encounter</option>
+            <option value="Observation">Observation</option>
+          </select>
+          <button id="btn-new" type="button" class="primary-btn">＋ 建立空白範本</button>
+        </div>
+      </div>
+
+      <!-- Existing templates -->
+      <div class="card">
+        <div class="step-label">已有範本</div>
+        <div class="tpl-actions">
+          <button id="btn-export" type="button">⬇ 匯出全部自訂範本（JSON）</button>
+          <label class="import-btn">
+            ⬆ 匯入 JSON
+            <input type="file" id="import-file" accept=".json" hidden />
+          </label>
+        </div>
+        <div id="tpl-list" class="tpl-list"></div>
+      </div>
+
+      <!-- Editor -->
+      <div class="card" id="editor-card" hidden>
+        <div class="step-label">編輯中：<span id="editor-name"></span></div>
+        <div class="editor-meta">
+          <label>名稱 <input type="text" id="edit-name" /></label>
+          <label>說明 <input type="text" id="edit-desc" /></label>
+          <label>
+            匹配規則 (regex)
+            <input type="text" id="edit-match" placeholder="例：patients" title="檔名或 sheet 名稱符合此 regex 就自動套用" />
+          </label>
+          <span class="muted">Resource Type：<strong id="edit-rt"></strong></span>
+        </div>
+
+        <h3>欄位對應</h3>
+        <p class="muted">每一條規則：你的 source 欄位 → FHIR field（+ 選擇性 transform）</p>
+        <div id="field-rows"></div>
+        <button id="btn-add-field" type="button" class="add-field-btn">＋ 新增欄位對應</button>
+
+        <div class="editor-footer">
+          <button id="btn-save" type="button" class="primary-btn">💾 儲存範本</button>
+          <button id="btn-delete" type="button" class="danger-btn">🗑 刪除此範本</button>
+          <button id="btn-close" type="button">取消</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="container">
+    <h2>使用方式</h2>
+    <ol class="steps">
+      <li>
+        <strong>建立空白範本</strong>
+        <p>選 Resource type（Patient / Encounter / Observation）+ 取個名字</p>
+      </li>
+      <li>
+        <strong>新增欄位對應</strong>
+        <p>「source 欄位」= 你 XLS / CSV 內的 column 名稱（例：「身分證字號」）<br/>
+        「FHIR field」= 從下拉選對應的 FHIR R4 field（例：Patient.identifier）<br/>
+        「transform」= 選擇性，例如 date-iso 把民國轉西元</p>
+      </li>
+      <li>
+        <strong>匹配規則</strong>
+        <p>regex 寫匹配你檔名或 sheet 名稱的條件（例：<code>patients</code> 會匹配「patients_2024.xlsx」）。沒寫的話需要在首頁手動指定。</p>
+      </li>
+      <li>
+        <strong>儲存後回首頁套用</strong>
+        <p>上傳檔案時自動偵測 + 顯示你的自訂範本</p>
+      </li>
+      <li>
+        <strong>匯出 JSON 分享</strong>
+        <p>診所之間可以分享映射範本（不分享病人資料）</p>
+      </li>
+    </ol>
+  </section>
+
+  <style>
+    .hero { padding: 4rem 20px 1rem; max-width: 800px; }
+    .hl { color: var(--c-primary); }
+    .lead { font-size: 1.1rem; margin-bottom: 1rem; color: var(--c-text); }
+    .privacy { font-size: 0.9rem; padding: 0.65rem 1rem; background: var(--c-success-bg); border-left: 3px solid var(--c-success); border-radius: 0 6px 6px 0; color: var(--c-success); }
+    section { padding: 1rem 20px 2rem; }
+    .designer { display: grid; gap: 1.25rem; }
+    .card { padding: 1.5rem; background: var(--c-bg-soft); border-radius: 12px; border: 1px solid var(--c-border); }
+    .step-label { font-size: 0.78rem; font-weight: 700; color: var(--c-primary); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.85rem; }
+
+    .new-tpl-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .new-tpl-row input[type="text"] { flex: 1; min-width: 220px; padding: 0.55rem 0.85rem; border: 1px solid var(--c-border); border-radius: 6px; font-family: inherit; font-size: 0.95rem; background: var(--c-bg-card); color: var(--c-text); }
+    .new-tpl-row select { padding: 0.55rem 0.85rem; border: 1px solid var(--c-border); border-radius: 6px; font-family: inherit; font-size: 0.95rem; background: var(--c-bg-card); color: var(--c-text); }
+    .primary-btn { padding: 0.55rem 1.25rem; background: var(--c-primary); color: white; border: none; border-radius: 6px; font-family: inherit; font-size: 0.95rem; font-weight: 600; cursor: pointer; }
+    .primary-btn:hover { background: var(--c-primary-light); }
+    .danger-btn { padding: 0.55rem 1.25rem; background: transparent; color: var(--c-error); border: 1px solid var(--c-error); border-radius: 6px; font-family: inherit; font-size: 0.95rem; cursor: pointer; }
+    .danger-btn:hover { background: var(--c-error); color: white; }
+
+    .tpl-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .tpl-actions button, .import-btn { padding: 0.5rem 1rem; background: var(--c-bg-card); border: 1px solid var(--c-border); border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 0.88rem; color: var(--c-text); display: inline-flex; align-items: center; }
+    .tpl-actions button:hover, .import-btn:hover { border-color: var(--c-primary); color: var(--c-primary); }
+
+    .tpl-list { display: grid; gap: 0.5rem; }
+    .tpl-row { padding: 0.75rem 1rem; background: var(--c-bg-card); border: 1px solid var(--c-border); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; }
+    .tpl-row.builtin { opacity: 0.7; }
+    .tpl-row .tag { font-size: 0.7rem; padding: 0.15rem 0.5rem; border-radius: 999px; background: var(--c-bg-soft); color: var(--c-text-soft); margin-left: 0.5rem; }
+    .tpl-row .tag.custom { background: var(--c-accent); color: white; }
+    .tpl-row .edit-link { background: none; border: none; color: var(--c-primary); cursor: pointer; font-family: inherit; font-size: 0.9rem; }
+    .tpl-row .edit-link:hover { color: var(--c-primary-light); }
+
+    .editor-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem; }
+    .editor-meta label { display: grid; gap: 0.3rem; font-size: 0.85rem; color: var(--c-text-muted); }
+    .editor-meta input { padding: 0.5rem 0.75rem; border: 1px solid var(--c-border); border-radius: 6px; background: var(--c-bg-card); color: var(--c-text); font-family: inherit; }
+    @media (max-width: 640px) { .editor-meta { grid-template-columns: 1fr; } }
+
+    #field-rows { display: grid; gap: 0.5rem; margin: 0.85rem 0; }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr 130px 32px; gap: 0.5rem; padding: 0.5rem; background: var(--c-bg-card); border: 1px solid var(--c-border); border-radius: 6px; }
+    .field-row input, .field-row select { padding: 0.4rem 0.6rem; border: 1px solid var(--c-border); border-radius: 4px; background: var(--c-bg); color: var(--c-text); font-family: inherit; font-size: 0.88rem; }
+    .field-row .del { background: transparent; border: 1px solid var(--c-error); color: var(--c-error); border-radius: 4px; cursor: pointer; }
+    .field-row .del:hover { background: var(--c-error); color: white; }
+    @media (max-width: 700px) { .field-row { grid-template-columns: 1fr 1fr; } .field-row .del { grid-column: 2; } }
+
+    .add-field-btn { padding: 0.45rem 0.85rem; background: transparent; border: 1px dashed var(--c-border); border-radius: 6px; color: var(--c-text-muted); cursor: pointer; font-family: inherit; font-size: 0.88rem; }
+    .add-field-btn:hover { border-color: var(--c-primary); color: var(--c-primary); }
+
+    .editor-footer { display: flex; gap: 0.5rem; margin-top: 1.25rem; flex-wrap: wrap; }
+    .editor-footer button { padding: 0.5rem 1rem; background: var(--c-bg-card); border: 1px solid var(--c-border); border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 0.92rem; color: var(--c-text); }
+
+    .steps { list-style: none; counter-reset: step; display: grid; gap: 1rem; margin-top: 1rem; }
+    .steps li { padding-left: 3rem; position: relative; }
+    .steps li::before { counter-increment: step; content: counter(step); position: absolute; left: 0; top: 0; width: 2rem; height: 2rem; background: var(--c-primary); color: white; border-radius: 50%; display: grid; place-items: center; font-weight: 700; }
+  </style>
+
+  <script>
+    import {
+      allTemplates,
+      loadCustomTemplates,
+      saveCustomTemplate,
+      deleteCustomTemplate,
+      exportCustomBundle,
+      importCustomBundle,
+      createBlankTemplate,
+      fieldOptionsFor,
+    } from '../lib/mapping/custom';
+    import { ALL_TEMPLATES, type MappingTemplate, type FieldMapping, type FhirField } from '../lib/mapping/templates';
+
+    const TRANSFORMS = ['(none)', 'lowercase', 'date-iso', 'phone-tw', 'gender-tw'];
+
+    let editing: MappingTemplate | null = null;
+
+    const $newName = document.getElementById('new-name') as HTMLInputElement;
+    const $newRt = document.getElementById('new-rt') as HTMLSelectElement;
+    const $btnNew = document.getElementById('btn-new') as HTMLButtonElement;
+    const $btnExport = document.getElementById('btn-export') as HTMLButtonElement;
+    const $importFile = document.getElementById('import-file') as HTMLInputElement;
+    const $tplList = document.getElementById('tpl-list') as HTMLDivElement;
+
+    const $editorCard = document.getElementById('editor-card') as HTMLDivElement;
+    const $editorName = document.getElementById('editor-name') as HTMLSpanElement;
+    const $editName = document.getElementById('edit-name') as HTMLInputElement;
+    const $editDesc = document.getElementById('edit-desc') as HTMLInputElement;
+    const $editMatch = document.getElementById('edit-match') as HTMLInputElement;
+    const $editRt = document.getElementById('edit-rt') as HTMLSpanElement;
+    const $fieldRows = document.getElementById('field-rows') as HTMLDivElement;
+    const $btnAddField = document.getElementById('btn-add-field') as HTMLButtonElement;
+    const $btnSave = document.getElementById('btn-save') as HTMLButtonElement;
+    const $btnDelete = document.getElementById('btn-delete') as HTMLButtonElement;
+    const $btnClose = document.getElementById('btn-close') as HTMLButtonElement;
+
+    function escapeHtml(s: string) {
+      return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function renderTemplateList() {
+      const custom = loadCustomTemplates();
+      const all = [...ALL_TEMPLATES.map((t) => ({ t, builtin: true })), ...custom.map((t) => ({ t, builtin: false }))];
+      $tplList.innerHTML = all.map(({ t, builtin }) => `
+        <div class="tpl-row ${builtin ? 'builtin' : ''}">
+          <div>
+            <strong>${escapeHtml(t.name)}</strong>
+            <span class="tag ${builtin ? '' : 'custom'}">${t.resourceType}</span>
+            ${builtin ? '<span class="tag">內建</span>' : '<span class="tag custom">自訂</span>'}
+            <div class="muted" style="font-size:0.82rem;margin-top:0.25rem;">${escapeHtml(t.description)} · ${t.fields.length} 個欄位對應</div>
+          </div>
+          <button class="edit-link" data-id="${t.id}" data-builtin="${builtin}">${builtin ? '看內容' : '編輯 →'}</button>
+        </div>
+      `).join('');
+      $tplList.querySelectorAll<HTMLButtonElement>('.edit-link').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.id!;
+          const isBuiltin = btn.dataset.builtin === 'true';
+          const tpl = isBuiltin
+            ? ALL_TEMPLATES.find((t) => t.id === id)
+            : loadCustomTemplates().find((t) => t.id === id);
+          if (tpl) {
+            // 內建範本 → 複製一份成可編輯（id 改新）
+            if (isBuiltin) {
+              const cloned = { ...tpl, id: `custom-${Date.now()}`, name: tpl.name + '（複製）', fields: [...tpl.fields] };
+              openEditor(cloned);
+            } else {
+              openEditor(tpl);
+            }
+          }
+        });
+      });
+    }
+
+    function openEditor(tpl: MappingTemplate) {
+      editing = JSON.parse(JSON.stringify(tpl));
+      $editorCard.hidden = false;
+      $editorName.textContent = tpl.name;
+      $editName.value = tpl.name;
+      $editDesc.value = tpl.description ?? '';
+      $editMatch.value = typeof tpl.datasetMatch === 'string' ? tpl.datasetMatch
+        : tpl.datasetMatch instanceof RegExp ? tpl.datasetMatch.source : '';
+      $editRt.textContent = tpl.resourceType;
+      renderFieldRows();
+      $editorCard.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function renderFieldRows() {
+      if (!editing) return;
+      const opts = fieldOptionsFor(editing.resourceType);
+      $fieldRows.innerHTML = editing.fields.map((f, i) => `
+        <div class="field-row">
+          <input type="text" class="src" data-i="${i}" placeholder="你的欄位名（例：身分證字號）" value="${escapeHtml(f.sourceColumn)}" />
+          <select class="tgt" data-i="${i}">
+            ${opts.map((o) => `<option value="${o}" ${o === f.targetField ? 'selected' : ''}>${o}</option>`).join('')}
+          </select>
+          <select class="tx" data-i="${i}">
+            ${TRANSFORMS.map((tr) => `<option value="${tr === '(none)' ? '' : tr}" ${(f.transform ?? '') === (tr === '(none)' ? '' : tr) ? 'selected' : ''}>${tr}</option>`).join('')}
+          </select>
+          <button class="del" data-i="${i}" type="button" title="刪除">×</button>
+        </div>
+      `).join('');
+      $fieldRows.querySelectorAll<HTMLInputElement>('.src').forEach((el) => {
+        el.addEventListener('input', () => {
+          const i = parseInt(el.dataset.i!, 10);
+          editing!.fields[i].sourceColumn = el.value;
+        });
+      });
+      $fieldRows.querySelectorAll<HTMLSelectElement>('.tgt').forEach((el) => {
+        el.addEventListener('change', () => {
+          const i = parseInt(el.dataset.i!, 10);
+          editing!.fields[i].targetField = el.value as FhirField;
+        });
+      });
+      $fieldRows.querySelectorAll<HTMLSelectElement>('.tx').forEach((el) => {
+        el.addEventListener('change', () => {
+          const i = parseInt(el.dataset.i!, 10);
+          editing!.fields[i].transform = el.value ? (el.value as FieldMapping['transform']) : undefined;
+        });
+      });
+      $fieldRows.querySelectorAll<HTMLButtonElement>('.del').forEach((el) => {
+        el.addEventListener('click', () => {
+          const i = parseInt(el.dataset.i!, 10);
+          editing!.fields.splice(i, 1);
+          renderFieldRows();
+        });
+      });
+    }
+
+    $btnNew.addEventListener('click', () => {
+      const name = $newName.value.trim();
+      if (!name) { alert('請輸入範本名稱'); return; }
+      const tpl = createBlankTemplate($newRt.value as any, name);
+      openEditor(tpl);
+      $newName.value = '';
+    });
+
+    $btnAddField.addEventListener('click', () => {
+      if (!editing) return;
+      const opts = fieldOptionsFor(editing.resourceType);
+      editing.fields.push({ sourceColumn: '', targetField: opts[0] });
+      renderFieldRows();
+    });
+
+    $btnSave.addEventListener('click', () => {
+      if (!editing) return;
+      editing.name = $editName.value.trim() || editing.name;
+      editing.description = $editDesc.value.trim();
+      const matchStr = $editMatch.value.trim();
+      editing.datasetMatch = matchStr ? new RegExp(matchStr, 'i') : undefined;
+      saveCustomTemplate(editing);
+      alert('已儲存到瀏覽器 localStorage。回首頁時會自動使用。');
+      renderTemplateList();
+      $editorCard.hidden = true;
+      editing = null;
+    });
+
+    $btnDelete.addEventListener('click', () => {
+      if (!editing) return;
+      if (!confirm(`確定要刪除「${editing.name}」？`)) return;
+      deleteCustomTemplate(editing.id);
+      renderTemplateList();
+      $editorCard.hidden = true;
+      editing = null;
+    });
+
+    $btnClose.addEventListener('click', () => {
+      $editorCard.hidden = true;
+      editing = null;
+    });
+
+    $btnExport.addEventListener('click', () => {
+      const json = exportCustomBundle();
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `clinconvert-templates-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    $importFile.addEventListener('change', async () => {
+      const f = $importFile.files?.[0];
+      if (!f) return;
+      try {
+        const text = await f.text();
+        const result = importCustomBundle(text);
+        alert(`成功匯入：新增 ${result.added} 個、覆蓋 ${result.replaced} 個範本`);
+        renderTemplateList();
+      } catch (err) {
+        alert('匯入失敗：' + (err instanceof Error ? err.message : String(err)));
+      }
+      $importFile.value = '';
+    });
+
+    renderTemplateList();
+  </script>
+</BaseLayout>

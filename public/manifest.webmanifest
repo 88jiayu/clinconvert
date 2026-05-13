@@ -1,0 +1,19 @@
+{
+  "name": "clinconvert — XLS / CSV / JSON → FHIR R4",
+  "short_name": "clinconvert",
+  "description": "把病歷資料轉成 HL7 FHIR R4 標準。瀏覽器本地處理、檔案不離本地。Convert clinical data to FHIR R4, all in-browser.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0f766e",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["medical", "productivity", "utilities"],
+  "lang": "zh-Hant"
+}

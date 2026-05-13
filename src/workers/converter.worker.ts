@@ -19,6 +19,7 @@ import { parseXlsx } from '../lib/adapters/xlsx';
 import { parseJson } from '../lib/adapters/json';
 import { suggestTemplate, ALL_TEMPLATES, type MappingTemplate } from '../lib/mapping/templates';
 import { buildResource } from '../lib/fhir/builders';
+import { validateResource, summarize, type ValidationIssue, type ValidationSummary } from '../lib/fhir/validator';
 import type { FhirAnyResource } from '../lib/fhir/types';
 import type { NormalizedDataset } from '../lib/core/internal-model';
 
@@ -54,6 +55,8 @@ export interface ConvertSuccess {
   fileName: string;
   resources: FhirAnyResource[];
   datasets: DatasetSummary[];
+  validation: ValidationSummary;
+  validationIssues: ValidationIssue[];
 }
 
 export interface ConvertError {
@@ -137,6 +140,13 @@ ctx.onmessage = async (e: MessageEvent<ConvertJob>) => {
       total: totalRows,
     } as ConvertProgress);
 
+    // === Phase 3: validate ===
+    const allIssues: ValidationIssue[] = [];
+    for (const r of allResources) {
+      allIssues.push(...validateResource(r));
+    }
+    const validationSummary = summarize(allIssues, 100);
+
     // === Done ===
     ctx.postMessage({
       type: 'success',
@@ -144,6 +154,8 @@ ctx.onmessage = async (e: MessageEvent<ConvertJob>) => {
       fileName,
       resources: allResources,
       datasets: summaries,
+      validation: validationSummary,
+      validationIssues: allIssues,
     } as ConvertSuccess);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

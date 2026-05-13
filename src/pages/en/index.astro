@@ -27,7 +27,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         </label>
         <div class="upload-options">
           <button type="button" class="link-btn" id="pick-folder">📁 Pick a folder</button>
-          <input type="file" id="folder-input" webkitdirectory directory multiple hidden />
+          <input type="file" id="folder-input" multiple hidden {...({ webkitdirectory: '', directory: '' } as Record<string, string>)} />
           <span class="muted samples">
             ｜Samples:
             <a href="/sample-data/sample-patients.csv" download>patients.csv</a> ·
@@ -238,6 +238,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       status: 'pending' | 'parsing' | 'building' | 'done' | 'error';
       resources: FhirAnyResource[];
       datasets: DatasetSummary[];
+      validation?: { errors: number; warnings: number; informations: number };
+      validationIssues?: { severity: string; path: string; message: string }[];
       error?: string;
     }
     const results = new Map<string, FileResult>();
@@ -257,6 +259,10 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
           r.status = 'done';
           r.resources = msg.resources;
           r.datasets = msg.datasets;
+          r.validation = msg.validation
+            ? { errors: msg.validation.errors, warnings: msg.validation.warnings, informations: msg.validation.informations }
+            : undefined;
+          r.validationIssues = msg.validationIssues?.slice(0, 100);
         } else {
           r.status = 'error';
           r.error = msg.message;
@@ -395,6 +401,22 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         if (r.resources.length > 0) {
           const firstResource = r.resources[0];
           detail += `<details><summary>Preview first converted resource</summary><div class="mapping-preview"><div><div class="fhir-label">FHIR ${firstResource.resourceType}</div>${escapeHtml(JSON.stringify(firstResource, null, 2))}</div></div></details>`;
+        }
+        if (r.validation) {
+          const v = r.validation;
+          if (v.errors === 0 && v.warnings === 0) {
+            detail += `<div style="margin-top:0.5rem;color:var(--c-success);font-size:0.85rem;">✓ FHIR R4 structural validation passed (${r.resources.length} resources, 0 errors / 0 warnings)</div>`;
+          } else {
+            const errColor = v.errors > 0 ? 'var(--c-error)' : 'var(--c-warn)';
+            detail += `<div style="margin-top:0.5rem;font-size:0.85rem;color:${errColor};">⚠ FHIR R4 validation: ${v.errors} errors · ${v.warnings} warnings</div>`;
+            if (r.validationIssues && r.validationIssues.length > 0) {
+              const items = r.validationIssues.slice(0, 30).map((iss) => {
+                const sevColor = iss.severity === 'error' ? 'var(--c-error)' : iss.severity === 'warning' ? 'var(--c-warn)' : 'var(--c-text-soft)';
+                return `<li style="color:${sevColor};"><strong>[${escapeHtml(iss.severity)}]</strong> ${escapeHtml(iss.path)}: ${escapeHtml(iss.message)}</li>`;
+              }).join('');
+              detail += `<details style="margin-top:0.3rem;"><summary>Show validation issues (top 30)</summary><ul class="errors-list">${items}</ul></details>`;
+            }
+          }
         }
         detail += `</div>`;
       } else {
