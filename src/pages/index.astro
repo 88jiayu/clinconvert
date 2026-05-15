@@ -29,13 +29,33 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         <div class="upload-options">
           <button type="button" class="link-btn" id="pick-folder">📁 改選資料夾</button>
           <input type="file" id="folder-input" multiple hidden {...({ webkitdirectory: '', directory: '' } as Record<string, string>)} />
-          <span class="muted samples">
-            ｜範例：
-            <a href="/sample-data/sample-patients.csv" download>patients.csv</a> ·
-            <a href="/sample-data/sample-kdigo-observations.csv" download>observations.csv</a> ·
-            <a href="/sample-data/sample-exclincalc.json" download>exclincalc.json</a>
-          </span>
         </div>
+
+        <div class="try-samples">
+          <p class="try-samples-title">🎯 沒有檔案？一鍵載入範例試用：</p>
+          <div class="try-samples-grid">
+            <button type="button" class="sample-btn" data-sample="sample-patients.csv">
+              <strong>patients.csv</strong>
+              <span>11 筆病人資料 · CSV 格式</span>
+            </button>
+            <button type="button" class="sample-btn" data-sample="sample-kdigo-observations.csv">
+              <strong>observations.csv</strong>
+              <span>20 筆 KDIGO 體檢數值 · CSV 格式</span>
+            </button>
+            <button type="button" class="sample-btn" data-sample="sample-exclincalc.json">
+              <strong>exclincalc.json</strong>
+              <span>ExClinCalc 完整 JSON · 多 resource</span>
+            </button>
+          </div>
+          <p class="muted try-samples-hint">
+            點任一個 → 自動載入 + 進入 pipeline、不必下載再拖 ·
+            原檔下載：
+            <a href="/sample-data/sample-patients.csv" download>patients</a> ·
+            <a href="/sample-data/sample-kdigo-observations.csv" download>observations</a> ·
+            <a href="/sample-data/sample-exclincalc.json" download>exclincalc</a>
+          </p>
+        </div>
+
         <div id="file-info" class="file-info" hidden></div>
       </div>
 
@@ -211,6 +231,16 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     .link-btn { background: none; border: 1px solid var(--c-border); padding: 0.35rem 0.75rem; border-radius: 6px; font-size: 0.85rem; color: var(--c-text-muted); cursor: pointer; font-family: inherit; }
     .link-btn:hover { color: var(--c-primary); border-color: var(--c-primary); }
     .samples a { color: var(--c-primary); }
+
+    .try-samples { margin-top: 1.25rem; padding: 1rem; background: var(--c-bg-card); border: 1px dashed var(--c-primary); border-radius: 8px; }
+    .try-samples-title { font-size: 0.92rem; font-weight: 600; color: var(--c-primary); margin-bottom: 0.75rem; }
+    .try-samples-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.5rem; }
+    .sample-btn { display: flex; flex-direction: column; gap: 0.2rem; padding: 0.75rem 0.85rem; background: var(--c-bg-soft); border: 1px solid var(--c-border); border-radius: 6px; cursor: pointer; font-family: inherit; text-align: left; transition: all 0.15s; }
+    .sample-btn:hover { border-color: var(--c-primary); background: var(--c-success-bg); }
+    .sample-btn strong { color: var(--c-primary); font-size: 0.92rem; }
+    .sample-btn span { color: var(--c-text-muted); font-size: 0.78rem; }
+    .try-samples-hint { margin-top: 0.65rem; font-size: 0.78rem; }
+    .try-samples-hint a { color: var(--c-primary); }
 
     .file-info { margin-top: 1rem; padding: 0.75rem 1rem; background: var(--c-bg-card); border-radius: 6px; border: 1px solid var(--c-border); font-size: 0.9rem; }
 
@@ -425,6 +455,29 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     $pickFolder.addEventListener('click', () => $folder.click());
     $folder.addEventListener('change', () => {
       if ($folder.files) processFiles(Array.from($folder.files));
+    });
+
+    // 🎯 一鍵載入範例
+    document.querySelectorAll<HTMLButtonElement>('.sample-btn').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const sample = btn.dataset.sample;
+        if (!sample) return;
+        const original = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<strong>載入中...</strong><span>從 /sample-data/ 抓檔</span>';
+        try {
+          const r = await fetch(`/sample-data/${sample}`);
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          const blob = await r.blob();
+          const file = new File([blob], sample, { type: blob.type });
+          processFiles([file]);
+        } catch (e) {
+          alert(`載入範例失敗：${e instanceof Error ? e.message : String(e)}`);
+        } finally {
+          btn.innerHTML = original;
+          btn.disabled = false;
+        }
+      });
     });
 
     $cancelBtn.addEventListener('click', () => {

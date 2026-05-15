@@ -32,3 +32,5 @@ _handoff/
 # 額外環境變數
 .env.local
 
+# Portable build zip（每次 build 重新生成、不入版控）
+clinconvert-portable-*.zip
