@@ -139,11 +139,10 @@ const homeHref = isEn ? '/en/' : '/';
           var langBtn = document.getElementById('lang-toggle');
           if (langBtn) langBtn.addEventListener('click', function () {
             var path = location.pathname;
-            if (path.indexOf('/en/') === 0 || path === '/en') {
-              location.pathname = path.replace(/^\/en/, '') || '/';
-            } else {
-              location.pathname = '/en' + path;
-            }
+            // 目前只有 / 跟 /en/ 兩個語言版本、其他頁（research / mapping-designer）只有中文。
+            // 切語言永遠去 root，避免跳到不存在頁面 404。
+            var isEn = path.indexOf('/en/') === 0 || path === '/en';
+            location.pathname = isEn ? '/' : '/en/';
           });
         }
         if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

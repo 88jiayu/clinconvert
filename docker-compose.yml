@@ -1,0 +1,71 @@
+# HAPI FHIR Server — clinconvert 對接 demo
+#
+# 用途：給 clinconvert 「上傳 Bundle 到 FHIR server」功能一個本地測試環境。
+#       推甄面試時可現場 docker-compose up、把 Bundle POST 進去、demo「整合到大架構」。
+#
+# 啟動：
+#   docker-compose up -d
+#   等 30-60 秒（HAPI 啟動慢）
+#   開啟 http://localhost:8080/fhir/metadata 確認跑起來
+#
+# clinconvert UI 上傳設定：
+#   FHIR server endpoint: http://localhost:8080/fhir
+#   Auth: None（demo 環境）
+#
+# 停掉：
+#   docker-compose down
+#   docker-compose down -v   # 連 DB 一起清掉
+#
+# 系統需求：
+#   Docker Desktop / Docker Engine 20+
+#   ~2 GB RAM 給 HAPI（Java 應用、不輕）
+#   ~500 MB 給 PostgreSQL
+#
+# 為什麼選 HAPI：
+#   - 業界最廣用的開源 FHIR server（HL7 reference impl）
+#   - 同時 implement R4 + R4B + R5
+#   - 內建 $validate endpoint，方便驗 Bundle
+#   - 對接成功 = 證明 clinconvert 輸出符合 HL7 標準
+
+version: '3.8'
+
+services:
+  hapi-fhir:
+    image: hapiproject/hapi:v7.4.0
+    container_name: clinconvert-hapi
+    ports:
+      - "8080:8080"
+    environment:
+      # FHIR 版本選 R4（跟 clinconvert 對應）
+      hapi.fhir.fhir_version: R4
+      # 開啟跨來源（給瀏覽器 fetch 用）
+      hapi.fhir.cors.allow_Credentials: 'true'
+      hapi.fhir.cors.allowed_origin: '*'
+      # 開啟 $validate operation
+      hapi.fhir.validation.requests_enabled: 'true'
+      # 不用 disclaimer（給 demo 用、production 別這樣）
+      hapi.fhir.tester.home.allow_multiple_creation_modes: 'true'
+      # PostgreSQL 連線
+      spring.datasource.url: jdbc:postgresql://postgres:5432/hapi
+      spring.datasource.username: hapi
+      spring.datasource.password: hapi
+      spring.datasource.driverClassName: org.postgresql.Driver
+      spring.jpa.properties.hibernate.dialect: ca.uhn.fhir.jpa.model.dialect.HapiFhirPostgres94Dialect
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: clinconvert-hapi-pg
+    environment:
+      POSTGRES_DB: hapi
+      POSTGRES_USER: hapi
+      POSTGRES_PASSWORD: hapi
+    volumes:
+      - hapi-pg-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  hapi-pg-data:
+    driver: local

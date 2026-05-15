@@ -66,10 +66,50 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           <button type="button" data-format="transaction">⬇ Transaction Bundle</button>
           <button type="button" data-format="ndjson">⬇ NDJSON</button>
           <button type="button" data-format="zip-per-file" class="secondary">⬇ 每檔分開（zip）</button>
+          <button type="button" data-format="collection-encrypted" class="secondary encrypted">🔐 加密匯出 (.fhir.enc.json)</button>
         </div>
         <p class="muted output-hint">
           💡 <strong>完整整理包</strong>內含：依 resource type 分組、依病人分組、統計報告 (README)、錯誤列表 (errors.csv)、未匹配範本 (unmatched.csv) ── <strong>診所直接用這個</strong>。
         </p>
+        <p class="muted output-hint">
+          🔐 <strong>加密匯出</strong>：用 AES-256-GCM + PBKDF2 加密 Bundle（passphrase 從不上傳）。
+          適合「下載後寄 email / 雲端備份」等需要傳輸的場景。
+          <strong>忘記 passphrase 就無法解開</strong>。
+        </p>
+
+        <details class="hapi-panel">
+          <summary>🏥 進階：上傳到 FHIR server（HAPI / 衛福部中台等）</summary>
+          <div class="hapi-controls">
+            <p class="muted">
+              把 Bundle POST 到 FHIR server，整合到大架構。本機測試請先跑
+              <code>docker-compose up</code>（內含 HAPI FHIR + PostgreSQL），啟動後 endpoint 是
+              <code>http://localhost:8080/fhir</code>。
+            </p>
+            <label class="hapi-field">
+              <span>FHIR Server Endpoint</span>
+              <input
+                type="url"
+                id="hapi-endpoint"
+                placeholder="http://localhost:8080/fhir"
+                value="http://localhost:8080/fhir"
+              />
+            </label>
+            <label class="hapi-field">
+              <span>Bearer Token（可空）</span>
+              <input
+                type="password"
+                id="hapi-token"
+                placeholder="留空 = 無認證（demo 用）"
+              />
+            </label>
+            <div class="hapi-actions">
+              <button type="button" id="hapi-ping" class="secondary">🩺 試連線（GET /metadata）</button>
+              <button type="button" id="hapi-send-collection" class="secondary">↗ Send Collection Bundle</button>
+              <button type="button" id="hapi-send-transaction">↗ Send Transaction Bundle</button>
+            </div>
+            <pre id="hapi-log" class="hapi-log" hidden></pre>
+          </div>
+        </details>
         <details class="preview">
           <summary>預覽 JSON（前 5000 字）</summary>
           <pre id="output-preview"></pre>
@@ -128,9 +168,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         而且醫療資料傳輸有嚴格的合規與加密要求，需要在更大的 HIS / EMR 架構下整合才能落實。
       </p>
       <p>
-        台灣已有更成熟的開源專案，例如 <a href="https://github.com/healthymind-tech/Taiwan-Health-MCP" target="_blank" rel="noopener"><strong>療心智能 Taiwan-Health-MCP</strong></a>（148 stars，
-        Python + FastMCP + PostgreSQL，整合 ICD-10 / LOINC / 台灣 FDA 資料供 LLM 使用）。
-        clinconvert 跟它<strong>目標不同</strong>：前者解決「FHIR 資料 → LLM 查詢」，本工具聚焦「Excel 資料 → FHIR Bundle」這個 pre-step。
+        本工具聚焦的問題是「Excel 資料 → FHIR Bundle」的 pre-step ── 給整理輸入資料的研究者 / 學生用，
+        跟 FHIR server（如 HAPI）/ LLM 應用層的工具是<strong>不同層次</strong>、互補而非取代。
+        完整的開源生態系比較見 <a href="/research">研究 note</a>。
       </p>
       <p>本工具的工程展示 / 研究議題：</p>
       <ul>
@@ -142,6 +182,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       </ul>
       <p style="margin-top: 1rem; padding: 0.85rem 1rem; background: var(--c-warn-bg); border-left: 3px solid var(--c-warn); border-radius: 0 6px 6px 0; color: var(--c-warn);">
         ⚠️ <strong>正式臨床使用前需通過 HAPI FHIR validator 等專業驗證</strong>，並符合台灣個資法與醫療資訊相關規範。本工具不對輸出做臨床安全保證。
+      </p>
+      <p style="margin-top: 0.85rem;">
+        📄 研究 note + 加密檔案解密工具 → <a href="/research" style="color: var(--c-primary); font-weight: 600;">Research / FHIR Pre-step</a>
       </p>
     </div>
   </section>
@@ -207,6 +250,22 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     .output-actions button.secondary:hover { border-color: var(--c-primary); color: var(--c-primary); }
     .output-actions button.primary-cta { background: var(--c-accent); font-weight: 700; padding-left: 1.25rem; padding-right: 1.25rem; }
     .output-actions button.primary-cta:hover { background: color-mix(in srgb, var(--c-accent) 80%, white); }
+    .output-actions button.encrypted { border-color: var(--c-primary); color: var(--c-primary); }
+    .output-actions button.encrypted:hover { background: var(--c-primary); color: white; }
+
+    .hapi-panel { margin-top: 1rem; padding: 0.85rem 1rem; background: var(--c-bg-card); border: 1px solid var(--c-border); border-radius: 8px; }
+    .hapi-panel > summary { cursor: pointer; font-weight: 600; color: var(--c-text); font-size: 0.92rem; }
+    .hapi-controls { margin-top: 0.85rem; display: grid; gap: 0.65rem; }
+    .hapi-field { display: grid; gap: 0.25rem; font-size: 0.85rem; }
+    .hapi-field span { color: var(--c-text-muted); font-weight: 600; }
+    .hapi-field input { padding: 0.5rem 0.65rem; border: 1px solid var(--c-border); border-radius: 6px; font-family: ui-monospace, monospace; font-size: 0.88rem; background: var(--c-bg-soft); color: var(--c-text); }
+    .hapi-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.25rem; }
+    .hapi-actions button { padding: 0.5rem 0.85rem; border-radius: 6px; font-size: 0.85rem; font-family: inherit; cursor: pointer; border: 1px solid var(--c-primary); background: var(--c-primary); color: white; font-weight: 600; }
+    .hapi-actions button.secondary { background: transparent; color: var(--c-primary); }
+    .hapi-actions button:hover { opacity: 0.85; }
+    .hapi-log { margin-top: 0.5rem; padding: 0.75rem; background: #1a1a1a; color: #d4d4d4; border-radius: 6px; font-family: ui-monospace, monospace; font-size: 0.78rem; max-height: 240px; overflow: auto; white-space: pre-wrap; word-break: break-all; }
+    .hapi-log.success { color: #6ee7b7; }
+    .hapi-log.error { color: #fca5a5; }
     .output-hint { font-size: 0.85rem; margin-top: 0.85rem; line-height: 1.6; }
     .preview { margin-top: 1rem; }
     .preview summary { cursor: pointer; font-size: 0.9rem; color: var(--c-text-muted); margin-bottom: 0.5rem; }
@@ -231,10 +290,13 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       toPrettyJson,
       triggerDownload,
     } from '../lib/output/bundle';
-    import { organize, buildOrganizedZip, formatReport, type FileOutcome } from '../lib/output/organizer';
+    import { organize, buildOrganizedZip, type FileOutcome } from '../lib/output/organizer';
     import { loadCustomTemplates } from '../lib/mapping/custom';
+    import { registry } from '../lib/core/registry';
+    import { serializeEncrypted } from '../lib/output/encrypted';
+    import { HapiFhirTransport } from '../lib/impl/hapi-transport';
     import type { FhirAnyResource } from '../lib/fhir/types';
-    import type { ConvertSuccess, ConvertError, DatasetSummary } from '../workers/converter.worker';
+    import type { DatasetSummary } from '../workers/converter.worker';
 
     // === DOM refs ===
     const $file = document.getElementById('file-input') as HTMLInputElement;
@@ -575,6 +637,52 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           const organized = organize(outcomes, elapsed);
           const blob = await buildOrganizedZip(organized, 'zh');
           downloadBlob(blob, `clinconvert-organized-${ts}.zip`);
+        } else if (fmt === 'collection-encrypted') {
+          // 🔐 加密匯出：AES-256-GCM + PBKDF2 / 經由 registry.encryption
+          const passphrase = prompt(
+            '請輸入加密 passphrase（至少 12 字、建議含大小寫 + 數字 + 符號）。\n\n' +
+            '⚠️ 重要：passphrase 從不上傳，但**忘記就無法解開檔案**。',
+          );
+          if (!passphrase) return;
+          if (passphrase.length < 12) {
+            alert(`passphrase 至少 12 字（你輸入 ${passphrase.length} 字）。為了安全，這次加密取消。`);
+            return;
+          }
+          const confirmPass = prompt('請再輸入一次以確認：');
+          if (confirmPass !== passphrase) {
+            alert('兩次輸入不同，加密取消。');
+            return;
+          }
+          try {
+            const bundleJson = toPrettyJson(toCollectionBundle(res));
+            const plaintext = new TextEncoder().encode(bundleJson);
+            const key = await registry.encryption.deriveKey(passphrase);
+            const payload = await registry.encryption.encrypt(plaintext, key);
+            const serialized = serializeEncrypted(payload);
+            triggerDownload(
+              serialized,
+              `fhir-bundle-${ts}.fhir.enc.json`,
+              'application/octet-stream',
+            );
+            await registry.audit.log({
+              timestamp: Date.now(),
+              actor: 'anonymous',
+              action: 'encrypt-export',
+              target: `fhir-bundle-${ts}.fhir.enc.json`,
+              meta: {
+                resourceCount: res.length,
+                algorithm: registry.encryption.algorithm,
+              },
+            });
+            alert(
+              '✅ 加密匯出完成。\n\n' +
+              '請把 passphrase 用安全方式保管（密碼管理器、紙本鎖好）。\n' +
+              '解密工具：之後我們會放在 /research 頁面（Day 5）。',
+            );
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            alert(`加密失敗：${msg}`);
+          }
         }
       });
     });
@@ -589,5 +697,86 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     }
+
+    // === HAPI FHIR server panel handlers ===
+    const $hapiEndpoint = document.getElementById('hapi-endpoint') as HTMLInputElement | null;
+    const $hapiToken = document.getElementById('hapi-token') as HTMLInputElement | null;
+    const $hapiPing = document.getElementById('hapi-ping') as HTMLButtonElement | null;
+    const $hapiSendColl = document.getElementById('hapi-send-collection') as HTMLButtonElement | null;
+    const $hapiSendTxn = document.getElementById('hapi-send-transaction') as HTMLButtonElement | null;
+    const $hapiLog = document.getElementById('hapi-log') as HTMLPreElement | null;
+    const hapiTransport = new HapiFhirTransport();
+
+    function hapiLog(message: string, kind: 'info' | 'success' | 'error' = 'info') {
+      if (!$hapiLog) return;
+      $hapiLog.hidden = false;
+      $hapiLog.className = `hapi-log ${kind === 'info' ? '' : kind}`.trim();
+      const ts = new Date().toISOString().slice(11, 19);
+      $hapiLog.textContent = `[${ts}] ${message}`;
+    }
+
+    function hapiEndpoint(): string {
+      return $hapiEndpoint?.value?.trim() ?? '';
+    }
+
+    function hapiAuth() {
+      const tok = $hapiToken?.value?.trim();
+      return tok ? { type: 'bearer' as const, value: tok } : undefined;
+    }
+
+    $hapiPing?.addEventListener('click', async () => {
+      const ep = hapiEndpoint();
+      if (!ep) {
+        hapiLog('請填 endpoint URL', 'error');
+        return;
+      }
+      hapiLog(`Pinging ${ep}/metadata ...`);
+      const r = await hapiTransport.ping(ep);
+      if (r.ok) {
+        hapiLog(`✅ 連線成功（${r.serverInfo ?? 'OK'}）`, 'success');
+      } else {
+        hapiLog(`❌ 失敗：${r.error}`, 'error');
+      }
+    });
+
+    async function hapiSend(kind: 'collection' | 'transaction') {
+      const ep = hapiEndpoint();
+      if (!ep) {
+        hapiLog('請填 endpoint URL', 'error');
+        return;
+      }
+      const res = allResources();
+      if (res.length === 0) {
+        hapiLog('沒有 resource 可送', 'error');
+        return;
+      }
+      const bundle = kind === 'transaction' ? toTransactionBundle(res) : toCollectionBundle(res);
+      hapiLog(`Sending ${kind} bundle (${res.length} resources) → ${ep} ...`);
+      const result = await hapiTransport.send(bundle, ep, hapiAuth());
+      if (result.ok) {
+        hapiLog(
+          `✅ HTTP ${result.status}` +
+            (result.locationHeader ? `\nLocation: ${result.locationHeader}` : '') +
+            (result.body
+              ? `\n\nResponse body (${result.body.length} chars):\n` +
+                result.body.slice(0, 4000) +
+                (result.body.length > 4000 ? '\n... (truncated)' : '')
+              : ''),
+          'success'
+        );
+      } else {
+        hapiLog(`❌ HTTP ${result.status}\n${result.error}`, 'error');
+      }
+      await registry.audit.log({
+        timestamp: Date.now(),
+        actor: 'anonymous',
+        action: 'transport.send',
+        target: ep,
+        meta: { kind, resourceCount: res.length, ok: result.ok, status: result.status },
+      });
+    }
+
+    $hapiSendColl?.addEventListener('click', () => hapiSend('collection'));
+    $hapiSendTxn?.addEventListener('click', () => hapiSend('transaction'));
   </script>
 </BaseLayout>

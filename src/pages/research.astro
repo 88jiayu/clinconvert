@@ -1,0 +1,192 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+<BaseLayout title="clinconvert / Research — FHIR pre-step note + decryption tool">
+  <section class="container research-hero">
+    <p class="back-link"><a href="/">← 回首頁</a></p>
+    <h1>Research · FHIR Pre-step</h1>
+    <p class="lead">
+      Why Excel → FHIR conversion has no systematic solution.
+      <br><span class="muted">A research note + working decryption tool for the encrypted export format.</span>
+    </p>
+  </section>
+
+  <section class="container research-section">
+    <article class="note-summary">
+      <h2>研究 note 摘要</h2>
+      <p>
+        醫療互通標準（HL7 v2、FHIR R4）假設輸入是良好格式。但台灣中小型診所、護理之家、研究者最常用的資料格式是
+        <strong>Microsoft Excel</strong> ── 任意欄位名、混合型別、民國紀年、不一致的缺失值表示。
+      </p>
+      <p>
+        我們識別「<strong>FHIR pre-step</strong>」 ── 從 Excel chaos 到 FHIR Bundle 的 schema mapping 層
+        ── 是<strong>未被系統性研究</strong>的議題。我們調查了 9 個開源與商用 FHIR converter，
+        <strong>沒有任何一個同時做到</strong>：純瀏覽器處理、零安裝、PWA 離線、Excel 原生支援、模塊化架構。
+      </p>
+      <p class="hl-row">
+        三個研究方向：
+      </p>
+      <ol class="rq">
+        <li><strong>RQ1 · Schema mapping under uncertainty</strong> — 任意欄位名 → FHIR 欄位自動化 + 可驗證 mapping</li>
+        <li><strong>RQ2 · Privacy in browser-only architecture</strong> — 「資料從不離開瀏覽器」如何從口號變成可驗證的架構屬性</li>
+        <li><strong>RQ3 · Modular reference architecture</strong> — 同一份 codebase 能否同時服務小診所、研究者、大醫院（透過 composition 而非 fork）</li>
+      </ol>
+
+      <p class="links">
+        📄 完整 note（含 references、appendix）：<a href="https://github.com/88jiayu/clinconvert/blob/main/docs/RESEARCH_NOTE.md" target="_blank" rel="noopener">github.com/88jiayu/clinconvert/blob/main/docs/RESEARCH_NOTE.md</a><br>
+        🏗 競品分析：<a href="https://github.com/88jiayu/clinconvert/blob/main/docs/COMPETITIVE_ANALYSIS.md" target="_blank" rel="noopener">COMPETITIVE_ANALYSIS.md</a><br>
+        🔐 加密格式 spec：<a href="https://github.com/88jiayu/clinconvert/blob/main/src/lib/output/encrypted.ts" target="_blank" rel="noopener">src/lib/output/encrypted.ts</a><br>
+        🏥 HAPI demo：<a href="https://github.com/88jiayu/clinconvert/blob/main/docs/DAY4_HAPI_DEMO.md" target="_blank" rel="noopener">DAY4_HAPI_DEMO.md</a>
+      </p>
+    </article>
+
+    <article class="decrypt-tool">
+      <h2>🔐 解密工具（給用了「加密匯出」的使用者）</h2>
+      <p class="muted">
+        把 <code>.fhir.enc.json</code> 拖進來、輸入 passphrase、按解密 → 顯示原始 Bundle。
+        <strong>整個過程在你的瀏覽器、檔案 / passphrase 從不上傳</strong>。
+      </p>
+
+      <div class="decrypt-zone">
+        <input type="file" id="decrypt-file-input" accept=".json,.enc,.enc.json,application/json" hidden />
+        <label for="decrypt-file-input" class="decrypt-dropzone" id="decrypt-dropzone">
+          選擇 <code>.fhir.enc.json</code> 或拖檔到這
+        </label>
+        <div id="decrypt-fileinfo" class="decrypt-fileinfo" hidden></div>
+
+        <label class="decrypt-field">
+          <span>Passphrase</span>
+          <input type="password" id="decrypt-pass" placeholder="加密時輸入的 passphrase" />
+        </label>
+
+        <div class="decrypt-actions">
+          <button type="button" id="decrypt-btn">🔓 解密</button>
+          <button type="button" id="decrypt-download" class="secondary" hidden>⬇ 下載解密後 Bundle</button>
+        </div>
+
+        <pre id="decrypt-output" class="decrypt-output" hidden></pre>
+      </div>
+    </article>
+  </section>
+
+  <style>
+    .research-hero { padding: 4rem 20px 1rem; max-width: 800px; }
+    .back-link { font-size: 0.85rem; margin-bottom: 1rem; }
+    .back-link a { color: var(--c-text-muted); }
+    .lead { font-size: 1.05rem; color: var(--c-text); }
+    .muted { color: var(--c-text-muted); }
+
+    .research-section { padding: 1rem 20px 4rem; max-width: 800px; display: grid; gap: 2rem; }
+    .note-summary, .decrypt-tool { padding: 1.5rem; background: var(--c-bg-soft); border-radius: 12px; border: 1px solid var(--c-border); }
+    .note-summary h2, .decrypt-tool h2 { margin-bottom: 1rem; font-size: 1.25rem; }
+    .note-summary p { margin-bottom: 0.85rem; line-height: 1.7; }
+    .rq { margin: 0.5rem 0 1rem; padding-left: 1.5rem; }
+    .rq li { margin-bottom: 0.5rem; line-height: 1.65; }
+    .hl-row { margin-top: 1.25rem; font-weight: 600; }
+
+    .links { font-size: 0.9rem; padding: 0.85rem 1rem; background: var(--c-bg-card); border-radius: 6px; border: 1px solid var(--c-border); line-height: 1.85; }
+    .links a { color: var(--c-primary); word-break: break-all; }
+
+    .decrypt-zone { display: grid; gap: 0.85rem; }
+    .decrypt-dropzone { display: block; padding: 1.5rem 1rem; border: 2px dashed var(--c-border); border-radius: 8px; text-align: center; cursor: pointer; background: var(--c-bg-card); font-size: 0.92rem; }
+    .decrypt-dropzone:hover, .decrypt-dropzone.drag-over { border-color: var(--c-primary); background: var(--c-success-bg); }
+    .decrypt-fileinfo { padding: 0.65rem 0.85rem; background: var(--c-bg-card); border-radius: 6px; font-size: 0.85rem; }
+    .decrypt-field { display: grid; gap: 0.25rem; font-size: 0.85rem; }
+    .decrypt-field span { font-weight: 600; color: var(--c-text-muted); }
+    .decrypt-field input { padding: 0.55rem 0.75rem; border: 1px solid var(--c-border); border-radius: 6px; font-family: ui-monospace, monospace; background: var(--c-bg-card); color: var(--c-text); }
+    .decrypt-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .decrypt-actions button { padding: 0.6rem 1rem; border-radius: 6px; font-family: inherit; font-size: 0.92rem; cursor: pointer; border: none; background: var(--c-primary); color: white; font-weight: 600; }
+    .decrypt-actions button.secondary { background: transparent; border: 1px solid var(--c-primary); color: var(--c-primary); }
+    .decrypt-actions button:hover { opacity: 0.85; }
+    .decrypt-output { margin-top: 0.5rem; padding: 0.85rem; background: #1a1a1a; color: #d4d4d4; border-radius: 6px; font-family: ui-monospace, monospace; font-size: 0.78rem; max-height: 360px; overflow: auto; white-space: pre-wrap; word-break: break-all; }
+    .decrypt-output.error { color: #fca5a5; }
+  </style>
+
+  <script>
+    import { registry } from '../lib/core/registry';
+    import { deserializeEncrypted } from '../lib/output/encrypted';
+
+    const $file = document.getElementById('decrypt-file-input') as HTMLInputElement;
+    const $drop = document.getElementById('decrypt-dropzone') as HTMLLabelElement;
+    const $info = document.getElementById('decrypt-fileinfo') as HTMLDivElement;
+    const $pass = document.getElementById('decrypt-pass') as HTMLInputElement;
+    const $btn = document.getElementById('decrypt-btn') as HTMLButtonElement;
+    const $dl = document.getElementById('decrypt-download') as HTMLButtonElement;
+    const $out = document.getElementById('decrypt-output') as HTMLPreElement;
+
+    let currentFile: File | null = null;
+    let decryptedJson: string | null = null;
+
+    function showInfo(file: File) {
+      currentFile = file;
+      $info.hidden = false;
+      $info.textContent = `${file.name} · ${(file.size / 1024).toFixed(1)} KB`;
+    }
+
+    $file.addEventListener('change', () => {
+      const f = $file.files?.[0];
+      if (f) showInfo(f);
+    });
+
+    $drop.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      $drop.classList.add('drag-over');
+    });
+    $drop.addEventListener('dragleave', () => $drop.classList.remove('drag-over'));
+    $drop.addEventListener('drop', (e) => {
+      e.preventDefault();
+      $drop.classList.remove('drag-over');
+      const f = e.dataTransfer?.files?.[0];
+      if (f) showInfo(f);
+    });
+
+    $btn.addEventListener('click', async () => {
+      if (!currentFile) {
+        $out.hidden = false;
+        $out.className = 'decrypt-output error';
+        $out.textContent = '請先選檔。';
+        return;
+      }
+      const pass = $pass.value;
+      if (!pass) {
+        $out.hidden = false;
+        $out.className = 'decrypt-output error';
+        $out.textContent = '請輸入 passphrase。';
+        return;
+      }
+      $out.hidden = false;
+      $out.className = 'decrypt-output';
+      $out.textContent = '解密中...';
+      try {
+        const text = await currentFile.text();
+        const payload = deserializeEncrypted(text);
+        const key = await registry.encryption.deriveKey(pass, payload.salt);
+        const plaintext = await registry.encryption.decrypt(payload, key);
+        decryptedJson = new TextDecoder().decode(plaintext);
+        const preview = decryptedJson.length > 6000
+          ? decryptedJson.slice(0, 6000) + '\n... (truncated, full content available via 下載 button)'
+          : decryptedJson;
+        $out.textContent = preview;
+        $dl.hidden = false;
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        $out.className = 'decrypt-output error';
+        $out.textContent = `❌ 解密失敗：${msg}\n\n常見原因：\n- Passphrase 錯誤\n- 檔案損壞 / 不是 clinconvert 加密格式\n- 檔案被改過（AES-GCM auth tag 驗證失敗）`;
+        $dl.hidden = true;
+      }
+    });
+
+    $dl.addEventListener('click', () => {
+      if (!decryptedJson) return;
+      const blob = new Blob([decryptedJson], { type: 'application/fhir+json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = (currentFile?.name ?? 'bundle').replace(/\.fhir\.enc\.json$/, '.fhir.json').replace(/\.enc\.json$/, '.fhir.json');
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+  </script>
+</BaseLayout>
