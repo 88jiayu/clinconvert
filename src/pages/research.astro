@@ -38,6 +38,18 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         🔐 加密格式 spec：<a href="https://github.com/88jiayu/clinconvert/blob/main/src/lib/output/encrypted.ts" target="_blank" rel="noopener">src/lib/output/encrypted.ts</a><br>
         🏥 HAPI demo：<a href="https://github.com/88jiayu/clinconvert/blob/main/docs/DAY4_HAPI_DEMO.md" target="_blank" rel="noopener">DAY4_HAPI_DEMO.md</a>
       </p>
+
+      <div class="collab-box">
+        <h3>🤝 研究合作 / 接口擴充</h3>
+        <p>
+          歡迎來信討論：研究合作、補上 production 接口（HSM / HIPAA audit / SMART on FHIR / 醫院 HIS schema）、
+          或一起做 <strong>Tauri 桌面版本</strong>把架構落地。
+        </p>
+        <p class="contact">
+          📧 <a href="mailto:yuyulsc881209@icloud.com">yuyulsc881209@icloud.com</a> ·
+          💻 <a href="https://github.com/88jiayu/clinconvert" target="_blank" rel="noopener">GitHub Issues</a>
+        </p>
+      </div>
     </article>
 
     <article class="decrypt-tool">
@@ -100,6 +112,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     .decrypt-actions button:hover { opacity: 0.85; }
     .decrypt-output { margin-top: 0.5rem; padding: 0.85rem; background: #1a1a1a; color: #d4d4d4; border-radius: 6px; font-family: ui-monospace, monospace; font-size: 0.78rem; max-height: 360px; overflow: auto; white-space: pre-wrap; word-break: break-all; }
     .decrypt-output.error { color: #fca5a5; }
+
+    .collab-box { margin-top: 1.5rem; padding: 1rem 1.25rem; background: var(--c-bg-card); border-left: 3px solid var(--c-primary); border-radius: 0 6px 6px 0; }
+    .collab-box h3 { color: var(--c-primary); font-size: 1rem; margin-bottom: 0.5rem; }
+    .collab-box p { font-size: 0.92rem; line-height: 1.65; margin-bottom: 0.65rem; }
+    .collab-box .contact { font-size: 0.88rem; padding: 0.55rem 0.75rem; background: var(--c-bg-soft); border-radius: 4px; margin-bottom: 0; }
+    .collab-box .contact a { color: var(--c-primary); font-weight: 600; }
   </style>
 
   <script>

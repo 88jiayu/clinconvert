@@ -3,13 +3,15 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 <BaseLayout title="clinconvert — XLS / CSV / JSON → FHIR R4">
   <section class="hero container">
-    <h1>把病歷資料轉成 <span class="hl">FHIR R4</span> 標準</h1>
+    <h1>Excel 病歷資料 → <span class="hl">FHIR R4 Bundle</span></h1>
     <p class="lead">
-      支援 XLS / XLSX / CSV / JSON 輸入。批次上傳幾百個檔，瀏覽器內 Web Worker 並行處理，
-      輸出符合 HL7 FHIR R4 規範的 Bundle JSON、NDJSON、Transaction Bundle。
+      研究型 proof-of-concept：把 XLS / XLSX / CSV / JSON 結構化成 HL7 FHIR R4 Bundle。
+      批次處理幾百個檔、Web Worker Pool 並行、結構驗證、PWA 離線。
+      <strong>面向研究者 / 學生 / 工程展示</strong>，不是診所即用工具。
     </p>
     <p class="privacy">
-      🔒 <strong>檔案 100% 在你的瀏覽器處理</strong> · 不上傳、不留紀錄 · 並行 Worker Pool
+      🔒 <strong>檔案結構上不可能上傳</strong> ·
+      Content Security Policy 鎖定 outbound · 瀏覽器內處理 · PWA 可離線安裝
     </p>
   </section>
 
@@ -194,15 +196,45 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       </p>
       <p>本工具的工程展示 / 研究議題：</p>
       <ul>
-        <li><strong>瀏覽器本地處理</strong> ── 對應「強調隱私的醫療資料應在 local 端處理」的設計原則</li>
+        <li><strong>7 個 plug-in interface</strong>（input / encryption / transport / auth / validator / audit / consent）── 模塊化 reference architecture、未來接合規層只換 module</li>
+        <li><strong>瀏覽器本地處理</strong> ── 對應「強調隱私的醫療資料應在 local 端處理」的設計原則、Content Security Policy 鎖定 outbound</li>
+        <li><strong>Web Crypto 零知識加密匯出</strong> ── AES-256-GCM + PBKDF2 100k iter（OWASP 2023）</li>
+        <li><strong>HAPI FHIR server 對接</strong> ── docker-compose.yml + 上傳面板、demo「整合到大架構」</li>
         <li><strong>Web Worker Pool 並行</strong> ── 探索 client-side 大批檔處理的可行界線</li>
-        <li><strong>Adapter pattern</strong> ── 為將來擴充 HL7 v2 / DICOM 等格式預留架構</li>
-        <li><strong>結構驗證</strong> ── FHIR R4 必填、enum、reference integrity 等檢查</li>
-        <li><strong>開源</strong> ── 程式碼在 GitHub，作為學習與研究 FHIR 整合的起點</li>
+        <li><strong>結構驗證 + Bundle reference integrity</strong> ── FHIR R4 必填、enum、cross-reference 完整性檢查</li>
+        <li><strong>STRIDE 威脅模型</strong> ── ExClinCalc 已寫 24 威脅安全分析（<a href="https://github.com/RO883C/exclincalc/blob/main/docs/THREAT_MODEL.md" target="_blank" rel="noopener">公開文件</a>）</li>
       </ul>
       <p style="margin-top: 1rem; padding: 0.85rem 1rem; background: var(--c-warn-bg); border-left: 3px solid var(--c-warn); border-radius: 0 6px 6px 0; color: var(--c-warn);">
         ⚠️ <strong>正式臨床使用前需通過 HAPI FHIR validator 等專業驗證</strong>，並符合台灣個資法與醫療資訊相關規範。本工具不對輸出做臨床安全保證。
       </p>
+
+      <div class="collab-invite">
+        <h3>🤝 合作邀請</h3>
+        <p>
+          若有以下需求、歡迎來信討論：
+        </p>
+        <ul>
+          <li>
+            <strong>補上 production 接口</strong>（HSM、HIPAA / 個資法 audit、SMART on FHIR OAuth2、醫院 HIS schema 對接）
+            ── 我們可以一起做 <strong>Tauri 桌面版本</strong>，把這套架構真的落地到臨床環境
+          </li>
+          <li>
+            <strong>研究合作</strong>：FHIR pre-step / 多租戶醫療安全 / browser-only privacy 等議題
+          </li>
+          <li>
+            <strong>FHIR Profile 定制</strong>（台灣 NHI / 機構特定 profile）
+          </li>
+          <li>
+            <strong>新 input adapter</strong>（HL7 v2、CCDA、Cerner / Epic schema）
+          </li>
+        </ul>
+        <p class="collab-contact">
+          📧 <a href="mailto:yuyulsc881209@icloud.com">yuyulsc881209@icloud.com</a> ·
+          💻 <a href="https://github.com/88jiayu/clinconvert" target="_blank" rel="noopener">GitHub Issues</a> ·
+          🌐 <a href="https://jiayuselfweb.pages.dev" target="_blank" rel="noopener">個人網站</a>
+        </p>
+      </div>
+
       <p style="margin-top: 0.85rem;">
         📄 研究 note + 加密檔案解密工具 → <a href="/research" style="color: var(--c-primary); font-weight: 600;">Research / FHIR Pre-step</a>
       </p>
@@ -296,6 +328,14 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     .hapi-log { margin-top: 0.5rem; padding: 0.75rem; background: #1a1a1a; color: #d4d4d4; border-radius: 6px; font-family: ui-monospace, monospace; font-size: 0.78rem; max-height: 240px; overflow: auto; white-space: pre-wrap; word-break: break-all; }
     .hapi-log.success { color: #6ee7b7; }
     .hapi-log.error { color: #fca5a5; }
+
+    .collab-invite { margin-top: 1.25rem; padding: 1.25rem 1.5rem; background: linear-gradient(135deg, var(--c-success-bg), var(--c-bg-card)); border: 1px solid var(--c-primary); border-radius: 10px; }
+    .collab-invite h3 { margin-bottom: 0.75rem; color: var(--c-primary); font-size: 1.05rem; }
+    .collab-invite p { margin-bottom: 0.85rem; line-height: 1.7; }
+    .collab-invite ul { padding-left: 1.5rem; margin-bottom: 0.85rem; }
+    .collab-invite li { margin-bottom: 0.5rem; line-height: 1.65; }
+    .collab-contact { font-size: 0.92rem; padding: 0.65rem 0.85rem; background: var(--c-bg-soft); border-radius: 6px; margin-bottom: 0; }
+    .collab-contact a { color: var(--c-primary); font-weight: 600; }
     .output-hint { font-size: 0.85rem; margin-top: 0.85rem; line-height: 1.6; }
     .preview { margin-top: 1rem; }
     .preview summary { cursor: pointer; font-size: 0.9rem; color: var(--c-text-muted); margin-bottom: 0.5rem; }
