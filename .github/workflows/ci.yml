@@ -1,0 +1,42 @@
+name: CI
+
+# 純 build 驗證、不會阻擋 push。
+# 跑：每次 push 到 main / PR 對 main
+# 內容：npm install + astro build
+# 不跑：tests（暫時沒寫、加上去也不會 fail build）
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Check dist output
+        run: |
+          test -d dist || (echo "dist/ not generated" && exit 1)
+          test -f dist/index.html || (echo "index.html missing" && exit 1)
+          test -f dist/en/index.html || (echo "en/index.html missing" && exit 1)
+          test -f dist/research/index.html || (echo "research/index.html missing" && exit 1)
+          test -f dist/mapping-designer/index.html || (echo "mapping-designer/index.html missing" && exit 1)
+          echo "✅ All 4 pages built"

@@ -1,5 +1,13 @@
 # clinconvert ⇄ FHIR R4
 
+[![Build](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/88jiayu/clinconvert/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![FHIR R4](https://img.shields.io/badge/FHIR-R4-orange)](https://hl7.org/fhir/R4/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript)](https://www.typescriptlang.org/)
+[![Astro](https://img.shields.io/badge/Astro-Static-FF5D01?logo=astro)](https://astro.build/)
+[![PWA](https://img.shields.io/badge/PWA-installable-5A0FC8)](https://web.dev/progressive-web-apps/)
+[![AES-256-GCM](https://img.shields.io/badge/Encryption-AES--256--GCM-blue)](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto)
+
 > 把病歷資料從 **XLS / XLSX / CSV / JSON** 轉成符合 **HL7 FHIR R4** 標準的 Bundle JSON。
 > 完全瀏覽器本地處理 — 檔案不離開你的裝置。
 > 江家寓的「Clin- 系列」第三個作品，跟 [ClinCalc](https://github.com/RO883C/clincalc) / [ExClinCalc](https://github.com/RO883C/exclincalc) 同一系列。
@@ -165,6 +173,22 @@ gh repo create clinconvert --public --source=. --push
 | 欄位 transform（民國 → 西元 / 性別 / 電話）| [`src/lib/mapping/transforms.ts`](src/lib/mapping/transforms.ts) |
 | Bundle / NDJSON 輸出 | [`src/lib/output/bundle.ts`](src/lib/output/bundle.ts) |
 | UI 跟 wiring | [`src/pages/index.astro`](src/pages/index.astro) |
+
+## Clin- 生態系
+
+本作品是 **Clin- 系列**之一 ── 4 件作品共用同一套技術主軸
+（Cloudflare Workers + Supabase + PostgreSQL RLS + TypeScript strict）。
+不是各做各的、是**一個生態系**、環環相扣：
+
+| 作品 | 角色 | 對應 |
+|---|---|---|
+| [ClinCalc](https://github.com/RO883C/clincalc) | 民眾端 · 健康自查 + AI 解讀 | 入口：把醫療資料變得**看得懂** |
+| [ExClinCalc](https://github.com/RO883C/exclincalc) | 醫事端 · 診所 CDSS | 流程：醫師 / 護理師 / 藥師完整工作流 |
+| **clinconvert**（本作品） | 互通研究 · FHIR R4 轉換 POC | 標準化：跨機構資料**可互通** |
+| [Kaizei](https://jiayuselfweb.pages.dev/projects/kaizei) | 跨領域 · Personal Finance OS | 證明同套工程方法**跨領域複用** |
+
+設計理念：**隱私先行（local 端處理）· 規則優於 LLM · 安全在資料庫層**。
+詳見[個人網站](https://jiayuselfweb.pages.dev)。
 
 ## License
 

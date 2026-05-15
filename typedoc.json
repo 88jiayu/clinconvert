@@ -1,0 +1,27 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": [
+    "src/lib/core/interfaces.ts",
+    "src/lib/core/registry.ts",
+    "src/lib/core/internal-model.ts",
+    "src/lib/fhir/types.ts",
+    "src/lib/fhir/builders.ts",
+    "src/lib/fhir/validator.ts",
+    "src/lib/output/bundle.ts",
+    "src/lib/output/encrypted.ts",
+    "src/lib/impl"
+  ],
+  "out": "docs-api",
+  "name": "clinconvert API Reference",
+  "readme": "README.md",
+  "exclude": [
+    "**/node_modules/**",
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ],
+  "excludePrivate": true,
+  "excludeProtected": false,
+  "excludeInternal": false,
+  "skipErrorChecking": true,
+  "githubPages": false
+}
